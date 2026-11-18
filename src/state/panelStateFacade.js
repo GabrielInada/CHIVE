@@ -20,6 +20,7 @@ import {
 } from '../domain/panel/layoutTemplates.js';
 import { clampPercentage } from '../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
+import { capturePlacement, getPlacementSource, resolvePlacement } from '../domain/panel/placements.js';
 
 /**
  * CHIVE panel-domain facade.
@@ -331,7 +332,77 @@ export function createPanelStateFacade({
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, { blockId, slotId, chartId: result.normalizedId });
 	}
 
+	/** Read-only effective chart and source status for one placement. */
+	function getPanelPlacement(blockId, slotId) {
+		const block = appState.panel.blocks.find(item => item.id === blockId);
+		return resolvePlacement(getChartSnapshot(block?.slots?.[slotId]), block?.placements?.[slotId], appState.data.datasets);
+	}
+
+	/** No-op for missing slots, unavailable sources, or an unchanged setting. */
+	function setPanelPlacementFollowGlobalFilter(blockId, slotId, enabled) {
+		if (typeof enabled !== 'boolean') throw new Error('Invalid follow setting');
+		const block = appState.panel.blocks.find(item => item.id === blockId);
+		const chart = getChartSnapshot(block?.slots?.[slotId]);
+		const source = getPlacementSource(chart, appState.data.datasets);
+		if (!chart || !source || Boolean(block.placements?.[slotId]?.followGlobalFilter) === enabled) return;
+		block.placements = { ...block.placements, [slotId]: capturePlacement(source, enabled) };
+		emitStateChange(STATE_EVENTS.PANEL_PLACEMENTS_UPDATED, { count: 1 });
+	}
+
+	/** Composition-only refresh. Freeze before removal; notify after the source has gone. */
+	function refreshSourcePlacements(datasetId, { freeze = false, notify = true } = {}) {
+		let count = 0;
+		for (const block of appState.panel.blocks) {
+			for (const [slotId, chartId] of Object.entries(block.slots || {})) {
+				const chart = getChartSnapshot(chartId);
+				if (!datasetId || chart?.sourceDatasetId !== datasetId) continue;
+				const source = getPlacementSource(chart, appState.data.datasets);
+				const placement = block.placements?.[slotId];
+				if (placement?.followGlobalFilter) {
+					block.placements = {
+						...block.placements,
+						[slotId]: source ? capturePlacement(source, !freeze) : { ...placement, followGlobalFilter: false },
+					};
+					count += 1;
+				} else if (!source) {
+					count += 1;
+				}
+			}
+		}
+		if (count && notify) emitStateChange(STATE_EVENTS.PANEL_PLACEMENTS_UPDATED, { count });
+	}
+
+	/** Move or swap the entire placement in one write/event, even for identical chart IDs. */
+	function movePanelPlacement(sourceBlockId, sourceSlotId, targetBlockId, targetSlotId) {
+		const source = appState.panel.blocks.find(block => block.id === sourceBlockId);
+		const target = appState.panel.blocks.find(block => block.id === targetBlockId);
+		if (!source || !target || (source === target && sourceSlotId === targetSlotId)) return;
+		if (!getTemplateSlots(source.templateId).includes(sourceSlotId)
+			|| !getTemplateSlots(target.templateId).includes(targetSlotId)) throw new Error('Invalid panel slot');
+		const chartId = source.slots[sourceSlotId];
+		if (!getChartSnapshot(chartId)) return;
+		const targetChartId = target.slots[targetSlotId];
+		const sourcePlacement = source.placements?.[sourceSlotId];
+		const targetPlacement = target.placements?.[targetSlotId];
+		source.placements = { ...source.placements };
+		if (source !== target) target.placements = { ...target.placements };
+		delete source.slots[sourceSlotId];
+		delete source.placements[sourceSlotId];
+		delete target.placements[targetSlotId];
+		if (getChartSnapshot(targetChartId)) {
+			source.slots[sourceSlotId] = targetChartId;
+			if (targetPlacement) source.placements[sourceSlotId] = targetPlacement;
+		}
+		target.slots[targetSlotId] = chartId;
+		if (sourcePlacement) target.placements[targetSlotId] = sourcePlacement;
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, { blockId: targetBlockId, slotId: targetSlotId, chartId });
+	}
+
 	return {
+		getPanelPlacement,
+		setPanelPlacementFollowGlobalFilter,
+		refreshSourcePlacements,
+		movePanelPlacement,
 		getPanelCharts,
 		addChartSnapshot,
 		removeChartSnapshot,

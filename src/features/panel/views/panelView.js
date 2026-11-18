@@ -25,16 +25,18 @@ import {
 	createBlockHeader,
 	createBlockTemplateSelect,
 	createPanelSlotElement,
+	updatePlacementControls,
 } from './domBuilders.js';
 import {
 	getPanelCharts,
 	getPanelBlocks,
 	getChartSnapshot,
+	getPanelPlacement,
 } from '../../../state/appState.js';
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from '../layout/resize.js';
-import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
+import { mountSlot, teardownAllSlots, updateSlotSnapshot } from '../slots/lifecycle.js';
 import { PANEL_DOM_IDS } from '../domIds.js';
-import { openExpandedChart } from './expandedChart.js';
+import { openExpandedChart, refreshExpandedChart } from './expandedChart.js';
 
 // Keep mouse/trackpad dragging available in narrow or zoomed windows.
 const DRAG_POINTER_QUERY = '(any-pointer: fine)';
@@ -129,9 +131,10 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		itemHeader.appendChild(titleWrap);
 		itemHeader.appendChild(removeBtn);
 
-		// Preview section (live chart render)
+		// Original snapshot only. Inert leaves the parent drag/remove controls available.
 		const preview = document.createElement('div');
 		preview.className = 'panel-item-preview';
+		preview.setAttribute('inert', '');
 
 		article.appendChild(itemHeader);
 		article.appendChild(preview);
@@ -179,6 +182,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
  * @param {(blockId: string, heightPx: number) => void} callbacks.onUpdateBlockHeight
  */
 export function renderCanvasPanel(callbacks) {
+	refreshExpandedChart();
 	const canvas = document.getElementById(PANEL_DOM_IDS.canvas);
 	if (!canvas) return;
 	latestCanvasCallbacks = callbacks;
@@ -216,12 +220,24 @@ export function renderCanvasPanel(callbacks) {
 	canvas.appendChild(addControls);
 
 	canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slotEl => {
-		const chart = getChartSnapshot(slotEl.dataset.panelChartId);
+		const chart = getPanelPlacement(slotEl.dataset.panelBlockId, slotEl.dataset.panelSlot)?.snapshot;
 		if (!chart) return;
 		const chartContainer = slotEl.querySelector('.panel-chart-container');
 		if (!chartContainer) return;
 		mountSlot(chartContainer, chart, { deferUntilVisible: true });
 	});
+}
+
+/** Filter-only refreshes preserve sidebar previews, slot DOM, focus, and observers. */
+export function refreshPanelPlacements() {
+	const canvas = document.getElementById(PANEL_DOM_IDS.canvas);
+	canvas?.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slot => {
+		const placement = getPanelPlacement(slot.dataset.panelBlockId, slot.dataset.panelSlot);
+		if (!placement) return;
+		updatePlacementControls(slot, placement, t);
+		updateSlotSnapshot(slot.querySelector('.panel-chart-container'), placement.snapshot);
+	});
+	refreshExpandedChart();
 }
 
 /**
@@ -287,16 +303,21 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks, 
 	});
 
 	layout.slots.forEach(slotId => {
-		const chart = getChartSnapshot(block.slots?.[slotId]);
+		const placement = getPanelPlacement(block.id, slotId);
+		const chart = placement?.snapshot;
 		const slot = createPanelSlotElement({
 			slotId,
 			blockId: block.id,
 			chart,
+			placement,
+			onFollowGlobalFilter: enabled => callbacks.onFollowGlobalFilter(block.id, slotId, enabled),
 			borderEnabled: Boolean(block.borderEnabled),
 			borderColor,
 			desktopDnd,
 			translate: t,
-			onExpand: () => openExpandedChart(chart),
+			onExpand: () => openExpandedChart(getPanelPlacement(block.id, slotId)?.snapshot, {
+				resolveSnapshot: () => getPanelPlacement(block.id, slotId)?.snapshot,
+			}),
 			onClearSlot: () => callbacks.onAssignSlot(block.id, slotId, null),
 			onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
 				if (!chartId || !getChartSnapshot(chartId)) return;
@@ -304,16 +325,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks, 
 				if (sourceSlotId && sourceBlockId) {
 					if (sourceSlotId === targetSlotId && sourceBlockId === targetBlockId) return;
 
-					const stateBlocks = getPanelBlocks();
-					const targetBlock = stateBlocks.find(item => item.id === targetBlockId);
-					const targetChartId = targetBlock?.slots?.[targetSlotId] ?? null;
-
-					callbacks.onAssignSlot(targetBlockId, targetSlotId, chartId);
-					if (targetChartId !== null && targetChartId !== undefined) {
-						callbacks.onAssignSlot(sourceBlockId, sourceSlotId, targetChartId);
-					} else {
-						callbacks.onAssignSlot(sourceBlockId, sourceSlotId, null);
-					}
+					callbacks.onMovePlacement(sourceBlockId, sourceSlotId, targetBlockId, targetSlotId);
 				} else {
 					callbacks.onAssignSlot(targetBlockId, targetSlotId, chartId);
 				}

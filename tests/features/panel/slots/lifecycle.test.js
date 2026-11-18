@@ -14,7 +14,7 @@ const tooltipMock = vi.hoisted(() => ({
 
 vi.mock('../../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
 
-import { mountSlot, teardownSlot, teardownAllSlots, renderAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
+import { mountSlot, teardownSlot, teardownAllSlots, renderAllSlots, updateSlotSnapshot } from '../../../../src/features/panel/slots/lifecycle.js';
 import { CHART_DISPOSE_HOOK } from '../../../../src/charts/shared/containerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -312,5 +312,41 @@ describe('panel slot lifecycle', () => {
 		const container = sizedContainer();
 		expect(mountSlot(container, { id: 1, type: 'line' }, { deferUntilVisible: true })).toEqual({ ok: true });
 		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+	});
+
+	it('refreshes changed data at the same size, preserves observers, and skips unchanged captures', () => {
+		const container = sizedContainer();
+		const original = { id: 1, type: 'network', config: {}, dataSnapshot: [{ x: 1 }], columnsSnapshot: [] };
+		mountSlot(container, original);
+		const dispose = vi.fn();
+		const stop = vi.fn();
+		container[CHART_DISPOSE_HOOK] = dispose;
+		container[SIMULATION_KEY] = { stop };
+		const next = { ...original, dataSnapshot: [] };
+		updateSlotSnapshot(container, next);
+		flushFrames();
+		expect(dispose).toHaveBeenCalledOnce();
+		expect(stop).toHaveBeenCalledOnce();
+		expect(FakeResizeObserver.instances).toHaveLength(1);
+		expect(FakeResizeObserver.instances[0].disconnected).toBe(false);
+		expect(dispatch.renderChartSnapshot).toHaveBeenLastCalledWith(container, next);
+		updateSlotSnapshot(container, { ...next });
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+	});
+
+	it('exports the latest offscreen capture without requiring a resize or visibility change', () => {
+		vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+		const root = document.createElement('div');
+		const container = sizedContainer();
+		root.append(container);
+		const original = { id: 1, type: 'bar', config: {}, dataSnapshot: [{ x: 1 }], columnsSnapshot: [] };
+		mountSlot(container, original, { deferUntilVisible: true });
+		const next = { ...original, dataSnapshot: [{ x: 2 }] };
+		updateSlotSnapshot(container, next);
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).not.toHaveBeenCalled();
+		renderAllSlots(root);
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledExactlyOnceWith(container, next);
 	});
 });

@@ -69,7 +69,9 @@ panel getter synthesizes its default block:
 `data.datasets` contains `Dataset` records. `activeIndex === -1` represents no
 selection. `panel.charts` contains chart snapshots. Per-block `block.slots` is
 the authoritative assignment map; `panel.slots` is retained for legacy
-single-block compatibility.
+single-block compatibility. Optional `block.placements[slotId]` holds
+`{ followGlobalFilter, dataSnapshot, columnsSnapshot }`. Missing entries use the
+original saved chart; captures are detached arrays replaced on refresh.
 
 `panel.layout` is a persisted compatibility field and invariant mirror of
 `panel.blocks[0].templateId`; the first block remains authoritative. Default
@@ -102,10 +104,12 @@ This is the complete named-export surface of `src/state/appState.js`:
     "getChartSnapshot",
     "getPanelBlocks",
     "getPanelCharts",
+    "getPanelPlacement",
     "getPersistenceStateView",
     "getPreviewRows",
     "getState",
     "movePanelBlock",
+    "movePanelPlacement",
     "onStateChange",
     "removeChartSnapshot",
     "removeDataset",
@@ -117,6 +121,7 @@ This is the complete named-export surface of `src/state/appState.js`:
     "setActiveDatasetColumnSelection",
     "setDatasetColumnCurrency",
     "setPanelBlockTemplate",
+    "setPanelPlacementFollowGlobalFilter",
     "setPreviewRows",
     "setSidebarMode",
     "transformActiveDatasetConfigSilently",
@@ -138,6 +143,7 @@ This is the complete named-export surface of `src/state/appState.js`:
 | `getAllDatasets()` | Live datasets array. | No clone or validation. |
 | `getPanelCharts()` | Live snapshot array. | No clone or validation. |
 | `getChartSnapshot(chartId)` | Live snapshot or `null`. | Accepts a non-negative safe integer or decimal-integer string. It tolerantly returns `null` for malformed or missing ids; it does not throw like mutation entry points. |
+| `getPanelPlacement(blockId, slotId)` | Read-only effective snapshot, follow flag, source name and status. | Returns `null` for an empty/missing slot. Uses saved config with placement captures; source status is `available`, `missing`, or `unlinked`. |
 | `getPanelBlocks()` | Live blocks array. | Ensures one block exists, using the compatibility layout when synthesis is needed, increments `nextBlockId`, synchronizes `panel.layout`, and emits no event. |
 | `getPreviewRows()` | Primitive stored preview-row value. | No normalization on read. |
 | `sanitizeChartName(name)` | String. | Applies `String(name).slice(0, 100).trim()`. |
@@ -154,6 +160,7 @@ The lint guards treat these object/array-returning calls as read-only targets:
     "getAllDatasets",
     "getPanelCharts",
     "getChartSnapshot",
+    "getPanelPlacement",
     "getPanelBlocks",
     "getState",
     "getPersistenceStateView"
@@ -199,7 +206,17 @@ relies on stable array references.
 | `updatePanelBlockHeight(blockId, heightPx)` | Rounds, clamps to 220–760, stores, and emits the stored height only after a change. | A missing block is no-op/no event without validating the height. For an existing block, unchanged rounded/clamped results are no-op; the value must be a finite number, while coercion-only and non-finite values throw. |
 | `updatePanelBlockBorder(blockId, options)` | Atomically validates optional boolean `enabled` and valid trimmed hex `color`, applies them, and emits complete current border state only after a change. | A missing block is no-op/no event without validating the patch. For an existing block, empty/unchanged patches are no-op; non-plain patches, unknown keys, and invalid supplied fields throw before mutation. |
 | `setPanelBlockTemplate(blockId, templateId)` | Prunes disallowed slots, resets proportions, synchronizes `panel.layout`, and emits the exact template id only after a change. | A missing block returns `false` with no event without validating the template. For an existing block, an exact registry id is required and invalid ids throw; same-template calls return `true` with no event. |
-| `assignChartToPanelBlockSlot(blockId, slotId, chartId)` | Assigns an existing normalized chart id or deletes the key for `null`, then emits only after a change. | A missing block is no-op/no event without validating the slot or chart id. For an existing block, the slot must belong to its template; chart ids accept non-negative safe integers or decimal strings, and malformed/missing charts throw. Clearing an absent slot or assigning its current chart is no-op/no event. |
+| `assignChartToPanelBlockSlot(blockId, slotId, chartId)` | Assigns an existing normalized chart id or deletes the key for `null`, then emits only after a change. | A missing block is no-op/no event without validating the slot or chart id. For an existing block, the slot must belong to its template; chart ids accept non-negative safe integers or decimal strings, and malformed/missing charts throw. Clearing an absent slot is no-op. Assignment resets its placement capture, even with the same chart ID; same-ID assignment without placement state is no-op. |
+
+| `setPanelPlacementFollowGlobalFilter(blockId, slotId, enabled)` | Captures the original source’s current filtered rows and columns, stores the flag, emits `PANEL_PLACEMENTS_UPDATED`. | Requires a boolean. Missing slots/sources and unchanged flags are no-op. Disabling captures the current result. |
+| `movePanelPlacement(sourceBlockId, sourceSlotId, targetBlockId, targetSlotId)` | Atomically moves or swaps assignment and complete placement state, emits one `PANEL_BLOCK_SLOT_ASSIGNED`. | Missing blocks/source charts or identical locations are no-op. Unsupported slots throw before mutation. Same chart IDs can still swap distinct captures. |
+
+The public composition layer refreshes following placements after global-filter
+changes and successful currency writes. It captures and disables followers before
+source deletion, then notifies after deletion so controls show the missing source.
+No subscriber performs these writes or emits a nested event. Saved chart settings
+(including local filters) remain unchanged. Slot clearing/replacement, chart/block
+removal, template pruning, and orphan-reference repair discard stale captures.
 
 ### UI And Hydration Methods
 
@@ -207,7 +224,7 @@ relies on stable array references.
 |---|---|---|
 | `setSidebarMode(mode)` | Stores and emits `SIDEBAR_MODE_CHANGED`. | Accepts exactly `data`, `viz`, or `panel`; throws otherwise; same value is no-op/no event. |
 | `setPreviewRows(rows)` | Stores and emits `PREVIEW_ROWS_CHANGED` only when the value changes. | Requires an integer from 1 through 1000; every other value throws before mutation. |
-| `applyStateSnapshot({ data, panel, ui })` | Hydrates supplied fields and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. A supplied data slice defaults invalid collections/indexes, canonicalizes config, and sanitizes selected columns. A supplied panel slice defaults fields, keeps object block entries, canonicalizes block templates, synthesizes from a valid legacy layout when needed, and mirrors `panel.layout`; chart records are not generally validated here. A supplied UI slice overwrites only valid individual fields, including preview rows from 1 through 1000. Calling with no arguments still emits. |
+| `applyStateSnapshot({ data, panel, ui })` | Hydrates supplied fields and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. A supplied data slice defaults invalid collections/indexes, canonicalizes config, and sanitizes selected columns. A supplied panel slice defaults fields, keeps object block entries, canonicalizes block templates, synthesizes from a valid legacy layout when needed, and mirrors `panel.layout`; chart records are not generally validated here. Placement reconciliation drops orphan/invalid captures, refreshes available live sources, and disables missing links before the single event. A supplied UI slice overwrites only valid individual fields, including preview rows from 1 through 1000. Calling with no arguments still emits. |
 
 `applyStateSnapshot` is therefore partial at the slice level, not a reset-to-default
 operation. It is a hydration/import escape hatch rather than an ordinary
@@ -257,7 +274,8 @@ The `Emitters` and `Production subscriptions` cells use
 | `PANEL_BLOCK_HEIGHT_UPDATED` | `panelBlockHeightUpdated` | `src/state/panelStateFacade.js#updatePanelBlockHeight` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, heightPx }` after round/clamp. |
 | `PANEL_BLOCK_BORDER_UPDATED` | `panelBlockBorderUpdated` | `src/state/panelStateFacade.js#updatePanelBlockBorder` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, enabled, color }` with current values. |
 | `PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `src/state/panelStateFacade.js#setPanelBlockTemplate` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, templateId }` with the exact registered id. |
-| `PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `src/state/panelStateFacade.js#assignChartToPanelBlockSlot` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, slotId, chartId }`; id is numeric or `null`. |
+| `PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `src/state/panelStateFacade.js#assignChartToPanelBlockSlot`<br>`src/state/panelStateFacade.js#movePanelPlacement` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, slotId, chartId }`; id is numeric or `null`. |
+| `PANEL_PLACEMENTS_UPDATED` | `panelPlacementsUpdated` | `src/state/panelStateFacade.js#setPanelPlacementFollowGlobalFilter`<br>`src/state/panelStateFacade.js#refreshSourcePlacements` | `src/features/panel/panelController.js#initPanelController` | `{ count }`, number of affected placements, without captured data. |
 | `SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `src/state/uiStateFacade.js#setSidebarMode` | — | Stored mode. |
 | `PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `src/state/uiStateFacade.js#setPreviewRows` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored rows value. |
 | `STATE_HYDRATED` | `stateHydrated` | `src/state/appState.js#applyStateSnapshot` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `undefined`. |
@@ -270,7 +288,7 @@ Production subscriptions are installed in three places:
 | Owner | Direct subscriptions | Timing | Render or side effect |
 |---|---|---|---|
 | `app/renderCoordinator.js` | `ACTIVE_DATASET_CHANGED`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMN_SELECTION_CHANGED`, `DATASET_COLUMNS_CHANGED`, `DATASET_CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
-| `features/panel/panelController.js` | Eleven chart/block events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas. Clear: sidebar + canvas. |
+| `features/panel/panelController.js` | Twelve chart/block/placement events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas. Clear: sidebar + canvas. Placement updates: existing slot controls and render inputs plus expanded view; sidebar untouched. |
 | `services/persistence/autoSave.js` | `WILDCARD` | UI prefs are attempted immediately; project writes are debounced and asynchronous. | Writes `chive.ui` for the two UI events. Ignores those UI events and `STATE_HYDRATED` for project dirtiness; every other nonempty event type marks the project dirty. |
 
 The render coordinator also has non-bus entries:
@@ -371,13 +389,14 @@ save notice names the owner and is not repeated while an identical one is open.
     },
     "sqlite": {
         "format": "chive-project",
-        "schemaVersion": "1",
+        "schemaVersion": "2",
         "tables": [
             "meta",
             "datasets",
             "app_state",
             "dataset_payload",
-            "panel_snapshot_payload"
+            "panel_snapshot_payload",
+            "panel_placement_payload"
         ]
     },
     "legacyIndexedDB": {
@@ -397,18 +416,19 @@ save notice names the owner and is not repeated while an identical one is open.
 }
 ```
 
-SQLite schema version `1` contains:
+SQLite schema version `2` contains (version `1` remains readable):
 
 | Table | Columns | Purpose |
 |---|---|---|
-| `meta` | `key`, `value` | Stores `format = chive-project` and `schema_version = 1`. |
+| `meta` | `key`, `value` | Stores `format = chive-project` and `schema_version = 2`. |
 | `datasets` | `id`, `position`, `name`, `columns_json`, `selected_columns_json`, `chart_config_json`, `precomputed_stats_json`, `size_label`, `fingerprint`, `fingerprint_algorithm` | Dataset metadata/config and deterministic identity, excluding row payloads. |
-| `app_state` | `key`, `doc` | JSON documents for `data_state` with `activeDatasetId`, and `panel` without chart payload arrays. |
+| `app_state` | `key`, `doc` | JSON documents for `data_state` with `activeDatasetId`, and `panel` without chart or placement payload arrays. |
 | `dataset_payload` | `dataset_id`, `rows_json` | Dataset rows keyed by dataset id. |
-| `panel_snapshot_payload` | `chart_id`, `rows_json`, `columns_json` | Captured panel chart rows and columns keyed by chart id. |
+| `panel_snapshot_payload` | `chart_id`, `rows_json`, `columns_json` | Original chart rows and columns keyed by chart id. |
+| `panel_placement_payload` | `block_id`, `slot_id`, `rows_json`, `columns_json` | Independent latest placement captures keyed by block and slot. |
 
 `blobBackend` serializes the complete SQLite database to one byte image and
-stores it at the IndexedDB identifier above. Full exports retain both payload
+stores it at the IndexedDB identifier above. Full exports retain all three payload
 tables. Work-only exports first write a normal image, then empty the payload
 tables and run `VACUUM`; work-only imports are rejected because dataset
 re-linking is not implemented.
@@ -420,7 +440,7 @@ Normal boot hydration is:
 1. If the initializer's `isPersistenceAvailable()` check is true, call
    `hydrateState` before installing state subscriptions.
 2. Read the SQLite bytes through the worker path (or attempted fallback),
-   deserialize, and read the five schema tables.
+   deserialize, and read the six schema tables.
 3. When there is no SQLite project and the migration marker is absent, attempt
    the one-time legacy raw-IndexedDB import.
 4. Validate dataset records, sanitize selected columns, canonicalize chart
@@ -531,7 +551,7 @@ whole project, so overlapping two produces a result neither asked for.
 ## Panel Lifecycle
 
 A chart snapshot has `{ id, name, type, config, dataSnapshot, columnsSnapshot,
-metadata, metaSummary, createdAt }`. It is a render specification, not
+metadata, metaSummary, createdAt, sourceDatasetId }`. It is a render specification, not
 pre-rendered SVG or canvas output. The production capture flow supplies detached
 structured-cloned data/config, but the state objects are not `Object.freeze`d;
 live getters still expose them under the read-only policy. Dataset removal
@@ -540,7 +560,7 @@ preserves these captures and their legacy/per-block slot assignments.
 1. `panelController.addChartToPanel` verifies the type against the panel
    registry, derives the active dataset's shown dataset, and structured-clones
    the stored config block, the rows the global filter keeps, and every dataset
-   column.
+   column. It records the original stable dataset ID for new charts.
 2. `addChartSnapshot` normalizes and stores the snapshot, then synchronously
    emits `CHART_SNAPSHOT_ADDED`.
 3. The panel controller's typed subscriber synchronously renders the sidebar
@@ -555,6 +575,25 @@ preserves these captures and their legacy/per-block slot assignments.
 6. SVG export clones current SVG nodes from the DOM. Canvas/WebGL slots are
    omitted and counted; a panel with assigned charts but no exportable SVG
    returns `no-exportable-charts`.
+
+Each occupied slot can independently follow its original source. Source lookup
+never uses the active dataset, filenames, or column similarity. Legacy charts
+without an ID stay usable and must be re-added to enable following. Filtering
+starts from full current source rows, so widening restores previously excluded
+rows and zero matches stays empty. Disabling following captures the current result;
+removing a source preserves it and disables following.
+
+Sidebar previews render the original capture inside an inert subtree while their
+parent remains draggable and removable. Placement updates preserve the checkbox
+DOM and focus, replace render inputs through slot lifecycle, and refresh any
+expanded view. Deferred slots keep the new input until visible or exported. SVG
+exports position chart content using its container geometry, excluding controls.
+
+Worker save records strip placement payloads before metadata cloning and cache
+arrays by block/slot and reference identity. Fallback and resync reconstruct the
+call-time record, never live state. Placement caches commit only after successful
+saves and prune removed entries. SQLite keeps their payloads in a separate table;
+normalization applies the existing cell-format rules before hydration.
 
 Supported panel chart types, in canonical chart-definition order:
 

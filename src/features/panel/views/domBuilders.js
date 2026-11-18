@@ -264,6 +264,8 @@ export function createPanelSlotElement({
 	onClearSlot,
 	onExpand,
 	onDropData,
+	placement,
+	onFollowGlobalFilter,
 }) {
 	const slot = document.createElement('div');
 	slot.className = chart ? 'panel-slot' : 'panel-slot empty';
@@ -293,6 +295,28 @@ export function createPanelSlotElement({
 
 		slot.appendChild(clearBtn);
 		slot.appendChild(chartContainer);
+		if (placement) {
+			const controls = document.createElement('div');
+			controls.className = 'panel-slot-controls';
+			const label = document.createElement('label');
+			label.className = 'panel-follow-label';
+			const checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.dataset.panelFollow = '1';
+			checkbox.id = `panel-follow-${blockId}-${slotId}`;
+			label.htmlFor = checkbox.id;
+			const text = document.createElement('span');
+			text.textContent = translate('chive-panel-follow-filter');
+			const help = document.createElement('p');
+			help.className = 'panel-follow-help';
+			help.id = `${checkbox.id}-help`;
+			checkbox.setAttribute('aria-describedby', help.id);
+			checkbox.addEventListener('change', () => onFollowGlobalFilter?.(checkbox.checked));
+			label.append(checkbox, text);
+			controls.append(label, help);
+			slot.appendChild(controls);
+			updatePlacementControls(slot, placement, translate);
+		}
 		if (onExpand) {
 			const expandBtn = document.createElement('button');
 			expandBtn.type = 'button';
@@ -310,6 +334,10 @@ export function createPanelSlotElement({
 
 		if (desktopDnd) {
 			slot.addEventListener('dragstart', e => {
+				if (e.target.closest('button, input, label, .panel-slot-controls')) {
+					e.preventDefault();
+					return;
+				}
 				e.dataTransfer.effectAllowed = 'move';
 				e.dataTransfer.setData('text/panel-chart-id', String(chart.id));
 				e.dataTransfer.setData('text/panel-slot-id', slotId);
@@ -347,4 +375,16 @@ export function createPanelSlotElement({
 	}
 
 	return slot;
+}
+
+/** Update existing controls in place so keyboard focus survives live refreshes. */
+export function updatePlacementControls(slot, placement, translate) {
+	const checkbox = slot.querySelector('[data-panel-follow]');
+	const help = slot.querySelector('.panel-follow-help');
+	if (!checkbox || !help || !placement) return;
+	checkbox.checked = placement.followGlobalFilter;
+	checkbox.disabled = placement.sourceStatus !== 'available';
+	help.textContent = placement.sourceStatus === 'available'
+		? translate('chive-panel-follow-source', placement.sourceName)
+		: translate(placement.sourceStatus === 'missing' ? 'chive-panel-follow-missing' : 'chive-panel-follow-unlinked');
 }

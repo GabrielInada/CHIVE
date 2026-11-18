@@ -154,6 +154,22 @@ export function renderAllSlots(rootEl) {
 	});
 }
 
+/** Replace the render input without disturbing observers or rendering offscreen charts. */
+export function updateSlotSnapshot(container, snapshot) {
+	const entry = slotState.get(container);
+	if (!entry || !snapshot) return;
+	const previous = entry.snapshot;
+	if (previous.id === snapshot.id && previous.config === snapshot.config
+		&& previous.dataSnapshot === snapshot.dataSnapshot && previous.columnsSnapshot === snapshot.columnsSnapshot) return;
+	entry.snapshot = snapshot;
+	entry.size = null;
+	// Discard obsolete graphics/resources even when hidden; export will materialize the new input.
+	stopNetworkSimulation(container);
+	hideChartTooltip();
+	clearChartContainer(container);
+	scheduleRender(container, entry);
+}
+
 /**
  * Tear down a single slot: disconnect the ResizeObserver, cancel any
  * pending RAF, stop the network simulation if any, and clear the

@@ -103,6 +103,7 @@
 }
 
 .panel-item-preview {
+  pointer-events: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -420,6 +421,8 @@
 }
 
 .panel-slot {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   position: relative;
   border: 1px solid var(--border);
@@ -482,6 +485,48 @@
   height: 100%;
 }
 
+.panel-slot > .panel-chart-container {
+    flex: 1;
+    height: auto;
+}
+
+.panel-slot-controls {
+    flex: none;
+    max-height: 45%;
+    overflow: auto;
+    padding: 0 var(--space-3) var(--space-2);
+    padding-inline-end: 50px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    cursor: default;
+    font-size: var(--font-size-sm);
+}
+
+.panel-follow-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    cursor: pointer;
+}
+
+.panel-follow-label input {
+    flex: none;
+    margin: 0;
+}
+
+.panel-follow-help {
+    margin: 0;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+    font-size: var(--font-size-xs);
+}
+
+.panel-follow-label:has(input:disabled) {
+    color: var(--muted);
+    cursor: default;
+}
+
 .panel-chart-container:has(.pie-chart-scrollable) {
   display: block;
   overflow: auto;
@@ -530,7 +575,8 @@
   border-color: var(--error-border-muted);
 }
 
-.panel-block:has(.panel-block-controls:not([open])) .panel-slot-clear {
+.panel-block:has(.panel-block-controls:not([open])) .panel-slot-clear,
+.panel-block:has(.panel-block-controls:not([open])) .panel-slot-controls {
   display: none;
 }
 

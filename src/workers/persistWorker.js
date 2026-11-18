@@ -26,6 +26,7 @@
  */
 
 import { createBlobBackend } from '../services/persistence/backends/blobBackend.js';
+import { mapPlacementPayloads, placementKey } from '../services/persistence/placementPayloads.js';
 
 /**
  * Replace a Map's contents with another Map's entries, in place.
@@ -53,6 +54,7 @@ export function createPersistHandler(backend, post) {
 	const rowsCache = new Map();
 	/** @type {Map<number, { data: Array<Object>, cols: Array<Object> }>} chartId -> snapshot payloads */
 	const snapshotCache = new Map();
+	const placementCache = new Map();
 
 	// Serialize ops. Each link RESOLVES even on failure (handleOne catches and
 	// posts an {ok:false} envelope) so a failed op never wedges later messages.
@@ -69,6 +71,7 @@ export function createPersistHandler(backend, post) {
 	function reconstructPersist(snapshot) {
 		const nextRows = new Map();
 		const nextSnapshot = new Map();
+		const nextPlacement = new Map();
 
 		const srcDatasets = Array.isArray(snapshot?.data?.datasets) ? snapshot.data.datasets : [];
 		const fullDatasets = [];
@@ -114,7 +117,19 @@ export function createPersistHandler(backend, post) {
 				fullCharts.push(rest);
 				if (Number.isInteger(chartId)) nextSnapshot.set(chartId, { data, cols });
 			}
-			fullPanel = { ...srcPanel, charts: fullCharts };
+			let needsResync = false;
+			const blocks = mapPlacementPayloads(srcPanel.blocks, (placement, blockId, slotId) => {
+				const key = placementKey(blockId, slotId);
+				const cached = placementCache.get(key);
+				const { dataSnapshotCached, columnsSnapshotCached, ...rest } = placement;
+				if ((dataSnapshotCached || columnsSnapshotCached) && !cached) needsResync = true;
+				rest.dataSnapshot = dataSnapshotCached ? cached?.dataSnapshot : (placement.dataSnapshot || []);
+				rest.columnsSnapshot = columnsSnapshotCached ? cached?.columnsSnapshot : (placement.columnsSnapshot || []);
+				nextPlacement.set(key, { dataSnapshot: rest.dataSnapshot, columnsSnapshot: rest.columnsSnapshot });
+				return rest;
+			});
+			if (needsResync) return { needsResync: true };
+			fullPanel = { ...srcPanel, charts: fullCharts, ...(srcPanel.blocks ? { blocks } : {}) };
 		}
 
 		const full = {
@@ -122,7 +137,7 @@ export function createPersistHandler(backend, post) {
 			data: { ...snapshot.data, datasets: fullDatasets },
 			panel: fullPanel,
 		};
-		return { full, nextRows, nextSnapshot };
+		return { full, nextRows, nextSnapshot, nextPlacement };
 	}
 
 	/**
@@ -144,6 +159,7 @@ export function createPersistHandler(backend, post) {
 				// Staged commit: only swap caches in after the write succeeds.
 				replaceMap(rowsCache, recon.nextRows);
 				replaceMap(snapshotCache, recon.nextSnapshot);
+				replaceMap(placementCache, recon.nextPlacement);
 				post({ id, ok: true, result: null });
 				return;
 			}
@@ -170,6 +186,7 @@ export function createPersistHandler(backend, post) {
 				// discarded the matching state.
 				rowsCache.clear();
 				snapshotCache.clear();
+				placementCache.clear();
 				post({ id, ok: true, result: result ?? null });
 				return;
 			}
@@ -196,7 +213,7 @@ export function createPersistHandler(backend, post) {
 		return run;
 	}
 
-	return { handleMessage, rowsCache, snapshotCache };
+	return { handleMessage, rowsCache, snapshotCache, placementCache };
 }
 
 // WHY: guarded by `DedicatedWorkerGlobalScope` so this module can be imported as

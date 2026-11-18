@@ -623,5 +623,9 @@
 	"chive-settings-data-clear-blocked": "Status shown in the settings dialog when the browser refused to delete the project database because another tab still has it open. Names the user action that resolves it.",
 	"chive-settings-data-clear-busy": "Status shown in the settings dialog when the clear action could not start because a project import or export is still running.",
 	"chive-about-page-title": "Browser tab title for the About page.",
-	"chive-footer-copyright": "Footer copyright notice. Keep the year and project name intact."
+	"chive-footer-copyright": "Footer copyright notice. Keep the year and project name intact.",
+    "chive-panel-follow-filter": "Checkbox label for one panel chart placement to follow its original dataset global filter.",
+    "chive-panel-follow-source": "Help for a panel placement with an available source. $1 is the source dataset name. Disabling freezes the current view.",
+    "chive-panel-follow-missing": "Help when a saved chart source dataset has been removed. Its last captured view remains visible.",
+    "chive-panel-follow-unlinked": "Help for legacy saved charts without a source dataset ID. Re-adding from Visualizations creates a source link."
 }

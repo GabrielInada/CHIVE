@@ -135,6 +135,7 @@ function stripPayloadTables(db) {
 	db.exec(`
 		DELETE FROM dataset_payload;
 		DELETE FROM panel_snapshot_payload;
+		DELETE FROM panel_placement_payload;
 		VACUUM;
 	`);
 }

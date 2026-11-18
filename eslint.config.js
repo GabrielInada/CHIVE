@@ -19,6 +19,7 @@ const APP_STATE_READS = [
 	'getAllDatasets',
 	'getPanelCharts',
 	'getChartSnapshot',
+	'getPanelPlacement',
 	'getPanelBlocks',
 	'getState',
 	'onStateChange',
@@ -34,7 +35,7 @@ const APP_STATE_READS = [
 // caught separately by the local `chive/no-facade-getter-mutation` rule. If a
 // new object- or array-returning read facade is added to appState.js, add it
 // here too (and to the local rule's getter list).
-const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceStateView)';
+const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelPlacement|getPanelBlocks|getState|getPersistenceStateView)';
 
 // Array methods that mutate the receiver in place. Kept in sync with
 // MUTATING_METHODS in eslint-rules/no-facade-getter-mutation.js.

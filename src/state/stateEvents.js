@@ -43,6 +43,7 @@ export const STATE_EVENTS = Object.freeze({
 	PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
 	PANEL_BLOCK_TEMPLATE_CHANGED: 'panelBlockTemplateChanged',
 	PANEL_BLOCK_SLOT_ASSIGNED: 'panelBlockSlotAssigned',
+	PANEL_PLACEMENTS_UPDATED: 'panelPlacementsUpdated',
 
 	// ui domain
 	SIDEBAR_MODE_CHANGED: 'sidebarModeChanged',
