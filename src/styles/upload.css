@@ -193,12 +193,13 @@
 }
 
 .file-item-button {
-  flex: 1;
-  border: none;
-  background: transparent;
-  text-align: left;
-  padding: var(--space-3) var(--space-4);
-  cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    cursor: pointer;
 }
 
 .file-item-button:hover {
@@ -239,19 +240,20 @@
 }
 
 .file-item-remove {
-  width: 34px;
-  border: none;
-  border-left: 1px solid var(--border);
-  background: var(--error-bg-soft);
-  color: var(--error-medium);
-  font-size: 1.125rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  border-radius: 0;
+    width: 34px;
+    flex-shrink: 0;
+    border: none;
+    border-left: 1px solid var(--border);
+    background: var(--error-bg-soft);
+    color: var(--error-medium);
+    font-size: 1.125rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    border-radius: 0;
 }
 
 .file-item-remove:hover {
