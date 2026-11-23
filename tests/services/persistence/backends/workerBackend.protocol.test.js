@@ -248,15 +248,18 @@ describe('workerBackend, reset is idempotent + stale responses ignored', () => {
 		});
 
 		const p = backend.persist(snap());
+		// The reset nulls worker.onerror, so keep the handler an already-queued
+		// error event would still reach. emitError() would be a silent no-op.
+		const staleOnError = worker.onerror;
 		await delay(60);                                    // watchdog fires (reset #1)
-		worker.emitError({ message: 'late crash' });        // same dead generation → no-op
+		staleOnError({ message: 'late crash' });            // same dead generation → no-op
 
 		await expect(p).resolves.toBeUndefined();
 		expect(fallback.persist).toHaveBeenCalledTimes(1);  // exactly once
 		expect(warnSpy).not.toHaveBeenCalled();             // stale onerror returns at the generation guard, before the warn
 	});
 
-	it('ignores a late ok:true from an already-terminated worker (no sentPayloads write)', async () => {
+	it('ignores a late ok:true from a terminated worker, even for an id pending on its replacement', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);
 		const workers = [];
@@ -267,18 +270,23 @@ describe('workerBackend, reset is idempotent + stale responses ignored', () => {
 		});
 
 		const rows = [{ x: 1 }];
-		await backend.persist(snap({ rows }));              // watchdog → fallback, worker[0] terminated
-		workers[0].emit({ id: 1, ok: true, result: null }); // late, stale, must be ignored
+		const first = backend.persist(snap({ rows }));
+		// The reset nulls worker.onmessage, so keep the handler an already-queued
+		// message event would still reach. emit() would be a silent no-op.
+		const staleOnMessage = workers[0].onmessage;
+		await first;                                        // watchdog → fallback, worker[0] terminated
+		await delay(0);                                     // first settles inside the drain; let it finish
 
-		// Next save spawns worker[1]; sentPayloads must still be empty → full payloads.
-		await delay(40);
-		const p = backend.persist(snap({ rows }));
-		await delay(40);
+		const second = backend.persist(snap({ rows }));     // worker[1] spawned, op pending
 		const msg = workers[1].posted[0];
-		expect(msg.snapshot.data.datasets[0].rowsCached).toBeUndefined();
-		expect(Array.isArray(msg.snapshot.data.datasets[0].rows)).toBe(true);
-		// settle the second op so the test does not leak a pending promise
-		await delay(40);
-		await p.catch(() => {});
+		expect(msg.snapshot.data.datasets[0].rowsCached).toBeUndefined(); // reset cleared the cache
+
+		// Only the generation guard stops this: the id matches a live pending op.
+		staleOnMessage({ data: { id: msg.id, ok: true, result: null } });
+		expect(backend.getDiagnostics().pendingOperations).toBe(1);
+
+		workers[1].emit({ id: msg.id, ok: true, result: null });
+		await expect(second).resolves.toBeUndefined();
+		expect(fallback.persist).toHaveBeenCalledTimes(1);  // only the first op fell back
 	});
 });
