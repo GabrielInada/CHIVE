@@ -30,7 +30,7 @@ function readAll(db, storeName) {
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction(storeName, 'readonly');
 		const req = tx.objectStore(storeName).getAll();
-		req.onsuccess = () => resolve(req.result || []);
+		req.onsuccess = () => resolve(req.result);
 		req.onerror = () => reject(req.error);
 	});
 }
