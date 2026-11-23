@@ -16,6 +16,7 @@
  * @property {(column: string, token: string) => void} [onBringBackGlobalFilter]
  * @property {(column: string, token: string) => 'included'|'excluded'|null} [getTokenFilterState]
  * @property {(column: string, token: string) => boolean} [isShowOnlyThisRedundant]
+ * @property {(column: string) => boolean} [canFilterColumn] - False for a column the filter cannot narrow by category.
  *
  * @typedef {Object} FilterCategory
  * @property {?string} column - Dataset column the category belongs to.
@@ -77,7 +78,8 @@ function buildCategoryActions(column, token, state, callbacks, labels) {
  * state: "Add to filter" and "Hide this" when the filter does not name it,
  * "Remove from filter" when the filter includes it, and "Bring back" when the
  * filter excludes it. An action appears only when its callback is a function,
- * and a category without a column or a token offers none. A tooltip about one
+ * and a category without a column or a token offers none, as does one whose
+ * column `canFilterColumn` rejects; neither has a state. A tooltip about one
  * category also shows a badge when the filter includes or excludes it; a
  * tooltip about two shows each category's actions under its heading and no
  * badge.
@@ -108,16 +110,23 @@ export function togglePinnedFilterTooltip(content, x, y, {
 } = {}) {
 	const callbacks = filterCallbacks || {};
 	const labels = filterActionLabels;
+	const canFilter = column => typeof callbacks.canFilterColumn !== 'function'
+		|| !!callbacks.canFilterColumn(column);
 	const named = categories
 		.filter(category => category?.column && category.token)
-		.map(category => ({
-			...category,
-			state: typeof callbacks.getTokenFilterState === 'function'
-				? callbacks.getTokenFilterState(category.column, category.token)
-				: null,
-		}));
+		.map(category => {
+			const filterable = canFilter(category.column);
+			return {
+				...category,
+				filterable,
+				state: filterable && typeof callbacks.getTokenFilterState === 'function'
+					? callbacks.getTokenFilterState(category.column, category.token)
+					: null,
+			};
+		});
 	const actionSets = [];
-	for (const { column, token, state, heading } of named) {
+	for (const { column, token, state, heading, filterable } of named) {
+		if (!filterable) continue;
 		const actions = buildCategoryActions(column, token, state, callbacks, labels);
 		if (actions.length > 0) actionSets.push(createNamedActionGroup(actions, heading));
 	}

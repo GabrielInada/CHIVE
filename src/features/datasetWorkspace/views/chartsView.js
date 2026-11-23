@@ -84,6 +84,7 @@ export function renderCharts(shown, onDatasetConfigChange = null) {
 		globalFilter: chartConfig.globalFilter,
 		safeGlobalFilter: filter,
 		allColumnNames: dataset.columns.map(column => column.name),
+		numericColumnNames: dataset.columns.filter(column => column.type === 'number').map(column => column.name),
 		onDatasetConfigChange,
 	});
 
