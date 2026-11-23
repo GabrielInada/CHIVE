@@ -387,18 +387,6 @@ export function getTokenFilterState(rawFilter, column, token) {
 }
 
 /**
- * Compatibility alias for {@link createEmptyGlobalFilter}. Both functions
- * return the same shape, distinct names exist because "create empty"
- * reads better at construction sites while "create default" reads better
- * at reset sites.
- *
- * @returns {GlobalFilter}
- */
-export function createDefaultGlobalFilter() {
-	return createEmptyGlobalFilter();
-}
-
-/**
  * Re-export to keep downstream callers that pull a single-rule default
  * working without reaching into `filterRule.js` directly.
  */
