@@ -240,6 +240,41 @@ describe('renderCharts tooltip filter actions', () => {
 		expect(onDatasetConfigChange).toHaveBeenCalledTimes(1);
 	});
 
+	// A rule on a numeric column applies as a numeric rule and ignores tokens,
+	// so a token action there would report a state the rows never show (#302).
+	it('does not filter a numeric column by category', () => {
+		const onDatasetConfigChange = vi.fn();
+		const dataset = makeDataset({
+			enabled: ['bar'],
+			globalFilter: {
+				rules: [{ column: 'sales', mode: 'numeric', operator: 'gt', value: '0', include: ['v:2'], exclude: ['v:1'] }],
+				combine: 'AND',
+			},
+		});
+
+		const callbacks = filterCallbacks(dataset, onDatasetConfigChange);
+		callbacks.onAddToGlobalFilter('sales', 'v:1');
+		callbacks.onFocusGlobalFilter('sales', 'v:1');
+		callbacks.onExcludeGlobalFilter('sales', 'v:1');
+		callbacks.onRemoveFromGlobalFilter('sales', 'v:2');
+		callbacks.onBringBackGlobalFilter('sales', 'v:1');
+
+		expect(onDatasetConfigChange).not.toHaveBeenCalled();
+		expect(callbacks.canFilterColumn('sales')).toBe(false);
+		expect(callbacks.canFilterColumn('region')).toBe(true);
+		expect(callbacks.canFilterColumn('missing')).toBe(false);
+		// The stored rule keeps leftover tokens; they must not show as a state.
+		expect(callbacks.getTokenFilterState('sales', 'v:1')).toBeNull();
+		expect(callbacks.getTokenFilterState('sales', 'v:2')).toBeNull();
+		expect(callbacks.isShowOnlyThisRedundant('sales', 'v:1')).toBe(false);
+
+		const numericOnly = filterCallbacks(makeDataset({
+			enabled: ['bar'],
+			globalFilter: { rules: [{ column: 'sales', mode: 'numeric', operator: 'gt', value: '0' }], combine: 'AND' },
+		}));
+		expect(numericOnly.isShowOnlyThisRedundant('sales', 'v:1')).toBe(false);
+	});
+
 	it('offers no actions without a callback, but still answers the lookups', () => {
 		const callbacks = filterCallbacks(makeDataset({ enabled: ['bar'] }));
 

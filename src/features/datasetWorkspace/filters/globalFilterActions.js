@@ -4,6 +4,13 @@
  * Wraps pure domain filter transformations with the feature's chart-config
  * callback contract. Chart tooltip handlers stay nullable when no writer is
  * available, while lookup functions are always present.
+ *
+ * Tooltip actions edit categorical include and exclude sets, which a rule on
+ * a numeric column ignores: the filter always applies it as a numeric rule.
+ * So a numeric column is not filterable from a tooltip. `canFilterColumn`
+ * tells the tooltip not to offer the actions, the handlers ignore it, and the
+ * lookups report no state for it, even when a stored rule carries leftover
+ * tokens.
  */
 
 import {
@@ -16,66 +23,46 @@ import {
   removeIncludeTokenFromFilter,
 } from '../../../domain/filters/globalFilter.js';
 
+/**
+ * @param {Object} args
+ * @param {*} args.globalFilter - The stored filter the actions edit.
+ * @param {*} args.safeGlobalFilter - The filter that applies, which the lookups read.
+ * @param {string[]} args.allColumnNames - Every dataset column, hidden ones included.
+ * @param {string[]} [args.numericColumnNames=[]] - Columns the dataset types as numbers.
+ * @param {((partial: Object) => void) | null} [args.onDatasetConfigChange]
+ */
 export function createGlobalFilterActions({
   globalFilter,
   safeGlobalFilter,
   allColumnNames,
+  numericColumnNames = [],
   onDatasetConfigChange,
 }) {
-  const handleAddToGlobalFilter = onDatasetConfigChange
-    ? (column, token) => {
-      if (typeof column !== 'string' || typeof token !== 'string') return;
-      if (!allColumnNames.includes(column)) return;
-      const merged = mergeIncludeTokenIntoFilter(globalFilter, column, token);
-      onDatasetConfigChange({ globalFilter: merged });
-    }
-    : null;
+  const canFilterColumn = column => typeof column === 'string'
+    && allColumnNames.includes(column)
+    && !numericColumnNames.includes(column);
 
-  const handleShowOnlyThis = onDatasetConfigChange
+  const action = transform => (onDatasetConfigChange
     ? (column, token) => {
-      if (typeof column !== 'string' || typeof token !== 'string') return;
-      if (!allColumnNames.includes(column)) return;
-      onDatasetConfigChange({ globalFilter: createSingleCategoryGlobalFilter(column, token) });
+      if (typeof token !== 'string' || !canFilterColumn(column)) return;
+      onDatasetConfigChange({ globalFilter: transform(column, token) });
     }
-    : null;
+    : null);
 
-  const handleExcludeFromGlobalFilter = onDatasetConfigChange
-    ? (column, token) => {
-      if (typeof column !== 'string' || typeof token !== 'string') return;
-      if (!allColumnNames.includes(column)) return;
-      const next = excludeTokenFromFilter(globalFilter, column, token);
-      onDatasetConfigChange({ globalFilter: next });
-    }
-    : null;
-
-  const handleRemoveFromGlobalFilter = onDatasetConfigChange
-    ? (column, token) => {
-      if (typeof column !== 'string' || typeof token !== 'string') return;
-      if (!allColumnNames.includes(column)) return;
-      const next = removeIncludeTokenFromFilter(globalFilter, column, token);
-      onDatasetConfigChange({ globalFilter: next });
-    }
-    : null;
-
-  const handleBringBackFromGlobalFilter = onDatasetConfigChange
-    ? (column, token) => {
-      if (typeof column !== 'string' || typeof token !== 'string') return;
-      if (!allColumnNames.includes(column)) return;
-      const next = removeExcludeTokenFromFilter(globalFilter, column, token);
-      onDatasetConfigChange({ globalFilter: next });
-    }
-    : null;
-
-  const lookupTokenFilterState = (column, token) => getTokenFilterState(safeGlobalFilter, column, token);
-  const lookupShowOnlyThisRedundant = (column, token) => isShowOnlyThisRedundant(safeGlobalFilter, column, token);
+  const lookupTokenFilterState = (column, token) => (canFilterColumn(column)
+    ? getTokenFilterState(safeGlobalFilter, column, token)
+    : null);
+  const lookupShowOnlyThisRedundant = (column, token) => canFilterColumn(column)
+    && isShowOnlyThisRedundant(safeGlobalFilter, column, token);
 
   return {
-    onAddToGlobalFilter: handleAddToGlobalFilter,
-    onFocusGlobalFilter: handleShowOnlyThis,
-    onExcludeGlobalFilter: handleExcludeFromGlobalFilter,
-    onRemoveFromGlobalFilter: handleRemoveFromGlobalFilter,
-    onBringBackGlobalFilter: handleBringBackFromGlobalFilter,
+    onAddToGlobalFilter: action((column, token) => mergeIncludeTokenIntoFilter(globalFilter, column, token)),
+    onFocusGlobalFilter: action((column, token) => createSingleCategoryGlobalFilter(column, token)),
+    onExcludeGlobalFilter: action((column, token) => excludeTokenFromFilter(globalFilter, column, token)),
+    onRemoveFromGlobalFilter: action((column, token) => removeIncludeTokenFromFilter(globalFilter, column, token)),
+    onBringBackGlobalFilter: action((column, token) => removeExcludeTokenFromFilter(globalFilter, column, token)),
     getTokenFilterState: lookupTokenFilterState,
     isShowOnlyThisRedundant: lookupShowOnlyThisRedundant,
+    canFilterColumn,
   };
 }
