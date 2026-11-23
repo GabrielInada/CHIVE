@@ -70,8 +70,15 @@ The default CHIVE runtime does not require external JavaScript or font CDNs.
 
 ## Local Static Test
 
-To test the production-style static runtime locally, run a static server from
-the project root:
+`npm run smoke` automates the checklist below except the 3D scatter. It
+serves only the runtime file set from a plain Node server, boots `index.html`
+and `about.html` in headless Chrome, uploads a CSV, renders a bar chart, waits
+for the auto-save, and reloads to confirm the dataset restores. Any console
+error, uncaught exception, or failed request on the page or in a worker fails
+it. Set `CHROME_PATH` when Chrome is not in a standard location. CI runs it on
+every push and pull request.
+
+To check by hand, run a static server from the project root:
 
 ```powershell
 python -m http.server 8080

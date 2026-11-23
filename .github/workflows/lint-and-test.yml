@@ -24,3 +24,5 @@ jobs:
 
       - run: npm ci
       - run: npm run check
+      # Boots the app in headless Chrome from a plain static server.
+      - run: npm run smoke

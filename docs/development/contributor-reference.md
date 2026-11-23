@@ -136,6 +136,10 @@ so scope ad hoc runs with plain `npx vitest run <path>`. The CSS lint step is ow
 vendored CSS, blocks on correctness errors, and keeps selector/custom property
 naming conventions warning-only under the current policy.
 
+CI then runs `npm run smoke`, which serves only the runtime file set and boots
+the app in headless Chrome with no Vite in between. See
+[Static hosting](../deployment/static-hosting.md#local-static-test).
+
 ## ESLint Guards
 
 Beyond the no-write-during-render invariant (renderers do not write state during
