@@ -56,6 +56,10 @@ describe('globalFilter', () => {
 			expect(normalized.rules[0].exclude).toEqual(['v:N']);
 		});
 
+		it('treats a rules field that is not an array as no rules', () => {
+			expect(normalizeGlobalFilter({ rules: 'region', combine: 'OR' })).toEqual({ rules: [], combine: 'AND' });
+		});
+
 		it('returns empty for null/undefined', () => {
 			expect(normalizeGlobalFilter(null).rules).toEqual([]);
 			expect(normalizeGlobalFilter(undefined).rules).toEqual([]);
@@ -433,6 +437,11 @@ describe('globalFilter', () => {
 		it('prefers excluded when token is somehow in both arrays', () => {
 			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: ['v:North'] }] };
 			expect(getTokenFilterState(filter, 'region', 'v:North')).toBe('excluded');
+		});
+
+		it('returns null when the rule for the column does not list the token', () => {
+			const filter = { rules: [{ column: 'region', include: ['v:North'], exclude: ['v:South'] }] };
+			expect(getTokenFilterState(filter, 'region', 'v:East')).toBeNull();
 		});
 
 		it('returns null for missing column or token', () => {
