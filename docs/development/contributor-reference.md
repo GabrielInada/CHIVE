@@ -128,7 +128,10 @@ detach without worrying about the emission in flight; the exact contract is in
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.
 
 CI runs `npm run check`, which executes JavaScript lint, CSS lint, tests, and
-the production build. The CSS lint step is owned by
+the production build. The tests run with coverage, and the run fails when
+statement, branch, function, or line coverage drops below the floors in
+`vitest.config.js`. A coverage run over a subset of tests fails those floors,
+so scope ad hoc runs with plain `npx vitest run <path>`. The CSS lint step is owned by
 [Stylesheet organization](styles.md): it checks `src/styles/**/*.css`, ignores
 vendored CSS, blocks on correctness errors, and keeps selector/custom property
 naming conventions warning-only under the current policy.
