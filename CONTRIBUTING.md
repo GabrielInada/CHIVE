@@ -55,6 +55,7 @@ npm run verify:vendor # Check vendored runtime files against package-lock
 npm test             # Run all tests once (vitest run)
 npm run test:coverage # Run tests, write a coverage report, and enforce the floors in vitest.config.js
 npm run test:watch   # Tests in watch mode
+npm run smoke        # Boot the raw-static app in headless Chrome (needs Chrome)
 ```
 
 Before opening a PR, check that:
@@ -66,7 +67,7 @@ Before opening a PR, check that:
 - `npm test` passes.
 - `npm run check` passes the full CI contract in one command.
 - The affected feature was smoke-checked with `npm run dev`.
-- The local static smoke test was run if the change affects raw-static runtime behavior.
+- `npm run smoke` passes if the change affects raw-static runtime behavior.
 
 ## Branching workflow
 
