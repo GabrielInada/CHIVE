@@ -19,6 +19,14 @@ export default defineConfig({
 			// entries/about.js) are left in deliberately so their real, untested
 			// code stays visible.
 			exclude: ['src/types.js', 'src/i18n/**'],
+			// Floors just under the current totals, so a deleted or skipped
+			// test fails `npm run check`. Raise them when coverage rises.
+			thresholds: {
+				statements: 96,
+				branches: 90,
+				functions: 97,
+				lines: 98,
+			},
 		},
 	},
 });
