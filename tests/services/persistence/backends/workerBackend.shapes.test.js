@@ -5,7 +5,7 @@ import {
 	__setPersistWorkerFactoryForTesting,
 	createWorkerBackend,
 } from '../../../../src/services/persistence/backends/workerBackend.js';
-import { MockWorker, snap } from './workerBackend.testSupport.js';
+import { attachRealHandler, MockWorker, nextDb, snap } from './workerBackend.testSupport.js';
 
 /** A worker that acknowledges every request on the next microtask. */
 function ackingWorker() {
@@ -78,6 +78,42 @@ describe('workerBackend, snapshot shapes on the wire', () => {
 			dataSnapshot: [],
 			columnsSnapshot: [],
 		});
+	});
+
+	it('saves a dataset without an id and a chart without an integer id with empty payloads', async () => {
+		const snapshot = snap();
+		delete snapshot.data.datasets[0].id;
+		snapshot.panel.charts[0].id = 'not-a-number';
+
+		const worker = new MockWorker();
+		attachRealHandler(worker, nextDb());
+		const backend = createWorkerBackend({ workerFactory: () => worker, fallbackBackendFactory: stubFallback });
+		await backend.persist(snapshot);
+
+		const sent = worker.posted.at(-1).snapshot;
+		expect(sent.data.datasets[0]).toMatchObject({ name: 'a.csv', rows: [] });
+		expect(sent.panel.charts[0]).toMatchObject({ id: 'not-a-number', dataSnapshot: [], columnsSnapshot: [] });
+
+		const fallback = stubFallback();
+		const noWorker = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			fallbackBackendFactory: () => fallback,
+		});
+		await noWorker.persist(snapshot);
+		const saved = fallback.persist.mock.calls[0][0];
+		expect(saved.data.datasets[0]).toMatchObject({ name: 'a.csv', rows: [] });
+		expect(saved.panel.charts[0]).toMatchObject({ id: 'not-a-number', dataSnapshot: [], columnsSnapshot: [] });
+	});
+
+	it('posts import bytes that are neither a typed array nor an ArrayBuffer as they are', async () => {
+		const worker = ackingWorker();
+		const backend = createWorkerBackend({ workerFactory: () => worker, fallbackBackendFactory: stubFallback });
+		const notBytes = { length: 2 };
+
+		await backend.importBytes(notBytes);
+
+		expect(worker.posted[0]).toMatchObject({ op: 'import' });
+		expect(worker.posted[0].bytes).toBe(notBytes);
 	});
 
 	it('treats a non-array chart list as no charts', async () => {
