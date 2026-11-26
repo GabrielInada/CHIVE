@@ -176,6 +176,89 @@ describe('computeRegression', () => {
 		}
 	});
 
+	it('fits in log(y) space when yScale is log and samples the line back in raw units', () => {
+		const points = [0, 1, 2, 3, 4].map(x => ({ x, y: 2 * Math.exp(0.5 * x) }));
+		const [result] = computeRegression({ points, xScale: 'linear', yScale: 'log', xDomain: [0, 4] });
+
+		expect(result.fit.slope).toBeCloseTo(0.5, 10);
+		expect(result.fit.intercept).toBeCloseTo(Math.log(2), 10);
+		expect(result.fit.r2).toBeCloseTo(1, 10);
+		for (const { x, y } of result.sampleLine) expect(y).toBeCloseTo(2 * Math.exp(0.5 * x), 8);
+	});
+
+	it('exponentiates a log(y) band so the line sits at the geometric middle of it', () => {
+		const noise = [0.1, -0.15, 0.05, 0.12, -0.08];
+		const points = noise.map((n, x) => ({ x, y: Math.exp(1 + 0.3 * x + n) }));
+		const [result] = computeRegression({ points, xScale: 'linear', yScale: 'log', xDomain: [0, 4] });
+
+		expect(result.sampleBand).toHaveLength(result.sampleLine.length);
+		result.sampleBand.forEach(({ x, yLow, yHigh }, i) => {
+			const { y } = result.sampleLine[i];
+			expect(x).toBe(result.sampleLine[i].x);
+			expect(yLow).toBeLessThan(y);
+			expect(yHigh).toBeGreaterThan(y);
+			// Symmetric in log space, so y is the geometric mean of the bounds, not the arithmetic one.
+			expect(Math.sqrt(yLow * yHigh)).toBeCloseTo(y, 8);
+			expect((yLow + yHigh) / 2).toBeGreaterThan(y);
+		});
+	});
+
+	it('recovers a power law on log-log scales', () => {
+		const points = [1, 2, 4, 8, 16].map(x => ({ x, y: 3 * x ** 2 }));
+		const [result] = computeRegression({ points, xScale: 'log', yScale: 'log', xDomain: [1, 16] });
+
+		expect(result.fit.slope).toBeCloseTo(2, 10);
+		expect(result.fit.intercept).toBeCloseTo(Math.log(3), 10);
+		expect(result.sampleLine[0]).toEqual({ x: expect.closeTo(1, 10), y: expect.closeTo(3, 8) });
+		expect(result.sampleLine.at(-1)).toEqual({ x: expect.closeTo(16, 8), y: expect.closeTo(768, 6) });
+	});
+
+	it('drops points whose log is not finite before fitting', () => {
+		const points = [
+			{ x: 0, y: 5 },
+			{ x: -1, y: 5 },
+			{ x: 1, y: 0 },
+			{ x: 1, y: Math.E },
+			{ x: Math.E, y: Math.E ** 3 },
+			{ x: Math.E ** 2, y: Math.E ** 5 },
+		];
+		const [result] = computeRegression({ points, xScale: 'log', yScale: 'log', xDomain: [1, 10] });
+
+		expect(result.fit.n).toBe(3);
+		expect(result.fit.slope).toBeCloseTo(2, 10);
+		expect(result.fit.intercept).toBeCloseTo(1, 10);
+	});
+
+	it('returns no results when every point is dropped', () => {
+		const results = computeRegression({
+			points: [{ x: 1, y: 0 }, { x: 2, y: -3 }],
+			xScale: 'linear',
+			yScale: 'log',
+			xDomain: [1, 2],
+		});
+
+		expect(results).toEqual([]);
+	});
+
+	it.each([
+		['is not an array', 'linear', null],
+		['does not have two ends', 'linear', [0, 5, 10]],
+		['has equal ends', 'linear', [3, 3]],
+		['has a non-finite end', 'linear', [0, Infinity]],
+		['starts at zero on a log x scale', 'log', [0, 10]],
+	])('returns no results when the x domain %s', (_case, xScale, xDomain) => {
+		expect(computeRegression({ points: linearPoints, xScale, yScale: 'linear', xDomain })).toEqual([]);
+	});
+
+	it('reports a perfect fit with no band when every y is the same', () => {
+		const points = [1, 2, 3, 4].map(x => ({ x, y: 7 }));
+		const [result] = computeRegression({ points, xScale: 'linear', yScale: 'linear', xDomain: [1, 4] });
+
+		expect(result.fit).toMatchObject({ ok: true, slope: 0, intercept: 7, r2: 1, ssRes: 0 });
+		expect(result.sampleBand).toBeNull();
+		expect(result.sampleLine.every(({ y }) => y === 7)).toBe(true);
+	});
+
 	it('groups points by groupBy and fits each group independently', () => {
 		const points = [
 			{ x: 0, y: 0, cat: 'A' },
@@ -282,6 +365,29 @@ describe('formatRegressionEquation', () => {
 			yScale: 'log',
 		});
 		expect(out).toBe('log(y) = 2·log(x) + 1');
+	});
+
+	it.each([
+		[0, 'y = 0·x + 0'],
+		[1.23456, 'y = 1.235·x + 1.235'],
+		[0.123456, 'y = 0.123·x + 0.123'],
+		[0.001, 'y = 0.001·x + 0.001'],
+		[0.00042, 'y = 4.20e-4·x + 4.20e-4'],
+		[12345, 'y = 1.23e+4·x + 1.23e+4'],
+		[9999.4, 'y = 9999·x + 9999'],
+	])('formats the coefficient %s as in %s', (value, expected) => {
+		expect(formatRegressionEquation({ slope: value, intercept: value, xScale: 'linear', yScale: 'linear' }))
+			.toBe(expected);
+	});
+
+	it('keeps the sign of a negative slope inside its coefficient', () => {
+		expect(formatRegressionEquation({ slope: -0.5, intercept: -20000, xScale: 'linear', yScale: 'linear' }))
+			.toBe('y = -0.5·x − 2.00e+4');
+	});
+
+	it('writes NaN for a coefficient that is not finite', () => {
+		expect(formatRegressionEquation({ slope: NaN, intercept: Infinity, xScale: 'linear', yScale: 'linear' }))
+			.toBe('y = NaN·x + NaN');
 	});
 });
 
