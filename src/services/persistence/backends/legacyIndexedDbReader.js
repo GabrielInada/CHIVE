@@ -17,11 +17,28 @@ function getIndexedDb() {
 	}
 }
 
+/**
+ * Open the legacy database if it exists, resolving null when it does not.
+ *
+ * A versionless open of a missing database would create it at version 1, so
+ * the first upgrade is aborted instead. An existing database at any version
+ * opens without an upgrade.
+ *
+ * @returns {Promise<IDBDatabase | null>}
+ */
 function openLegacyDb() {
 	return new Promise((resolve, reject) => {
 		const req = getIndexedDb().open(LEGACY_DB_NAME);
+		let aborted = false;
+		req.onupgradeneeded = () => {
+			aborted = true;
+			req.transaction.abort();
+		};
 		req.onsuccess = () => resolve(req.result);
-		req.onerror = () => reject(req.error);
+		req.onerror = () => {
+			if (aborted) resolve(null);
+			else reject(req.error);
+		};
 	});
 }
 
@@ -75,6 +92,7 @@ export async function readLegacyState() {
 	let db;
 	try {
 		db = await openLegacyDb();
+		if (!db) return null;
 		const [datasets, panelRecord] = await Promise.all([
 			readAll(db, LEGACY_STORE_DATASETS),
 			readOne(db, LEGACY_STORE_PANEL, LEGACY_PANEL_KEY),
