@@ -745,6 +745,9 @@ export default [
 			globals: {
 				process: 'readonly',
 				console: 'readonly',
+				// Node has no module for its WebSocket client; smoke-raw-esm.mjs
+				// drives Chrome over DevTools with it.
+				WebSocket: 'readonly',
 			},
 		},
 		rules: {

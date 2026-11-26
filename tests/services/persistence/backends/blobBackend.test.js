@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import {
 	createBlobBackend,
+	openSerializedDb,
+	recordToBytes,
 	SQLITE_IDB_PROJECT_KEY,
 	SQLITE_IDB_STORE,
 } from '../../../../src/services/persistence/backends/blobBackend.js';
@@ -162,5 +164,148 @@ describe('blobBackend', () => {
 
 		const restored = await backend.hydrate();
 		expect(restored.data.datasets[0].rows).toEqual([{ x: 1 }]);
+	});
+});
+
+describe('blobBackend, IndexedDB failures', () => {
+	const originalIndexedDb = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
+
+	afterEach(() => {
+		Object.defineProperty(globalThis, 'indexedDB', originalIndexedDb);
+	});
+
+	function installIndexedDb(descriptor) {
+		Object.defineProperty(globalThis, 'indexedDB', { configurable: true, ...descriptor });
+	}
+
+	// Minimal IDB double. Each option makes one request or transaction fail
+	// asynchronously, the way a real browser reports it.
+	function failingIndexedDb({ openError, readError, writeFailure, deleteError } = {}) {
+		const fire = (target, handler, props) => setTimeout(() => {
+			Object.assign(target, props);
+			target[handler]?.();
+		});
+		const db = {
+			objectStoreNames: { contains: () => true },
+			close: vi.fn(),
+			transaction() {
+				const tx = {
+					error: null,
+					objectStore: () => ({
+						get() {
+							const req = {};
+							if (readError) fire(req, 'onerror', { error: readError });
+							else fire(req, 'onsuccess', { result: undefined });
+							return req;
+						},
+						put() {
+							if (writeFailure) fire(tx, writeFailure.handler, { error: writeFailure.error });
+							else fire(tx, 'oncomplete', {});
+						},
+					}),
+				};
+				return tx;
+			},
+		};
+		return {
+			db,
+			open() {
+				const req = {};
+				if (openError) fire(req, 'onerror', { error: openError });
+				else fire(req, 'onsuccess', { result: db });
+				return req;
+			},
+			deleteDatabase() {
+				const req = {};
+				if (deleteError) fire(req, 'onerror', { error: deleteError });
+				else fire(req, 'onsuccess', {});
+				return req;
+			},
+		};
+	}
+
+	it('treats a throwing indexedDB accessor as unavailable storage', async () => {
+		// Sandboxed iframes and some privacy modes throw on the property read itself.
+		installIndexedDb({ get() { throw new DOMException('denied', 'SecurityError'); } });
+		const backend = nextBackend();
+
+		expect(backend.available()).toBe(false);
+		await expect(backend.hydrate()).resolves.toBeNull();
+		await expect(backend.persist(makeSnapshot())).rejects.toThrow('IndexedDB is unavailable');
+		await expect(backend.clear()).resolves.toEqual({ ok: false, reason: 'unavailable' });
+	});
+
+	it('rejects hydrate with the open request error', async () => {
+		const openError = new DOMException('version change blocked', 'VersionError');
+		installIndexedDb({ value: failingIndexedDb({ openError }) });
+
+		await expect(nextBackend().hydrate()).rejects.toBe(openError);
+	});
+
+	it('rejects hydrate with the read error and still closes the connection', async () => {
+		const readError = new DOMException('read failed', 'UnknownError');
+		const idb = failingIndexedDb({ readError });
+		installIndexedDb({ value: idb });
+
+		await expect(nextBackend().hydrate()).rejects.toBe(readError);
+		expect(idb.db.close).toHaveBeenCalledTimes(1);
+	});
+
+	it.each(['onabort', 'onerror'])('rejects persist with the transaction error from %s', async handler => {
+		// A quota failure aborts the write transaction. The original error must
+		// reach the caller unchanged so isQuotaError can classify it by name.
+		const quota = new DOMException('quota', 'QuotaExceededError');
+		const idb = failingIndexedDb({ writeFailure: { handler, error: quota } });
+		installIndexedDb({ value: idb });
+
+		await expect(nextBackend().persist(makeSnapshot())).rejects.toBe(quota);
+		expect(idb.db.close).toHaveBeenCalledTimes(1);
+	});
+
+	it('reports a failed delete as an error outcome rather than a success', async () => {
+		installIndexedDb({ value: failingIndexedDb({ deleteError: new DOMException('nope', 'UnknownError') }) });
+
+		await expect(nextBackend().clear()).resolves.toEqual({ ok: false, reason: 'error' });
+	});
+});
+
+describe('blobBackend, byte handling', () => {
+	it('reads typed-array, ArrayBuffer, and Blob records as bytes', async () => {
+		const source = new Uint8Array([0, 1, 2, 3, 4]);
+
+		expect(await recordToBytes(source.subarray(1, 4))).toEqual(new Uint8Array([1, 2, 3]));
+		expect(await recordToBytes(source.buffer.slice(0))).toEqual(source);
+		// jsdom Blob has no arrayBuffer(); browsers and workers do.
+		const blob = new Blob([source]);
+		blob.arrayBuffer = async () => source.buffer.slice(0);
+		expect(await recordToBytes(blob)).toEqual(source);
+		expect(await recordToBytes('not bytes')).toBeNull();
+		expect(await recordToBytes(null)).toBeNull();
+	});
+
+	it('frees the copied bytes and closes the database when deserialize fails', () => {
+		const db = { pointer: 7, close: vi.fn() };
+		const sqlite3 = {
+			oo1: { DB: vi.fn(function DB() { return db; }) },
+			capi: {
+				sqlite3_trace_v2: vi.fn(),
+				sqlite3_deserialize: vi.fn(() => 21),
+				SQLITE_DESERIALIZE_FREEONCLOSE: 1,
+			},
+			wasm: { allocFromTypedArray: vi.fn(() => 1234), dealloc: vi.fn() },
+		};
+
+		expect(() => openSerializedDb(sqlite3, new Uint8Array([1, 2]))).toThrow('sqlite3_deserialize failed: 21');
+		expect(sqlite3.wasm.dealloc).toHaveBeenCalledWith(1234);
+		expect(db.close).toHaveBeenCalledTimes(1);
+	});
+
+	it('rethrows a fingerprint failure that is not a size limit unchanged', async () => {
+		const backend = nextBackend();
+		const failure = new TypeError('cannot serialize cell');
+		const snapshot = makeSnapshot();
+		snapshot.data.datasets[0].rows = [{ x: { toJSON() { throw failure; } } }];
+
+		await expect(backend.persist(snapshot)).rejects.toBe(failure);
 	});
 });

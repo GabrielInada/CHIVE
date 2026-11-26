@@ -18,10 +18,6 @@ export const SQLITE_FORMAT = 'chive-project';
 // cells were canonical have none, and readers that predate it ignore it.
 const CELL_FORMAT_META_KEY = 'cell_format_version';
 
-function jsonStringify(value, fallback) {
-	return JSON.stringify(value === undefined ? fallback : value);
-}
-
 /**
  * Serialize rows, naming their owner when the text would exceed the engine's
  * maximum string length.
@@ -247,10 +243,10 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 					dataset.id,
 					position,
 					typeof dataset.name === 'string' ? dataset.name : '',
-					jsonStringify(Array.isArray(dataset.columns) ? dataset.columns : [], []),
-					jsonStringify(Array.isArray(dataset.selectedColumns) ? dataset.selectedColumns : [], []),
-					jsonStringify(isNonArrayObject(dataset.chartConfig) ? dataset.chartConfig : {}, {}),
-					dataset.precomputedStats === undefined ? null : jsonStringify(dataset.precomputedStats, null),
+					JSON.stringify(Array.isArray(dataset.columns) ? dataset.columns : []),
+					JSON.stringify(Array.isArray(dataset.selectedColumns) ? dataset.selectedColumns : []),
+					JSON.stringify(isNonArrayObject(dataset.chartConfig) ? dataset.chartConfig : {}),
+					dataset.precomputedStats === undefined ? null : JSON.stringify(dataset.precomputedStats),
 					typeof dataset.sizeLabel === 'string' ? dataset.sizeLabel : null,
 					fingerprint.fingerprint,
 					fingerprint.algorithm,
@@ -266,12 +262,12 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 		bindExec(
 			db,
 			'INSERT INTO app_state(key, doc) VALUES (?, ?)',
-			['data_state', jsonStringify({ activeDatasetId }, { activeDatasetId: null })],
+			['data_state', JSON.stringify({ activeDatasetId })],
 		);
 		bindExec(
 			db,
 			'INSERT INTO app_state(key, doc) VALUES (?, ?)',
-			['panel', jsonStringify(panelDoc, {})],
+			['panel', JSON.stringify(panelDoc)],
 		);
 
 		snapshotPayloads.forEach(payload => {
@@ -281,7 +277,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 				[
 					payload.chartId,
 					stringifyRows(payload.rows, { kind: 'chart', name: payload.name }),
-					jsonStringify(payload.columns, []),
+					JSON.stringify(payload.columns),
 				],
 			);
 		});
@@ -289,7 +285,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 		placementPayloads.forEach(payload => {
 			bindExec(db,
 				'INSERT INTO panel_placement_payload(block_id, slot_id, rows_json, columns_json) VALUES (?, ?, ?, ?)',
-				[payload.blockId, payload.slotId, stringifyRows(payload.rows, { kind: 'chart', name: payload.name }), jsonStringify(payload.columns, [])],
+				[payload.blockId, payload.slotId, stringifyRows(payload.rows, { kind: 'chart', name: payload.name }), JSON.stringify(payload.columns)],
 			);
 		});
 		db.exec('COMMIT');

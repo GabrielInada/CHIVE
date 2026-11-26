@@ -70,7 +70,6 @@ export function initChartControls(configChangeCallback = null, liveRenderCallbac
  * @private
  */
 function captureControlSectionExpansionState(container) {
-	if (!container || typeof container.querySelectorAll !== 'function') return {};
 	const state = {};
 	const sections = container.querySelectorAll('.chart-control-section');
 	sections.forEach(section => {
@@ -89,7 +88,6 @@ function captureControlSectionExpansionState(container) {
  * @private
  */
 function applyControlSectionExpansionState(container, state) {
-	if (!container || typeof container.querySelector !== 'function' || !state) return;
 	Object.entries(state).forEach(([sectionId, expanded]) => {
 		const section = container.querySelector(`.chart-control-section[data-section="${sectionId}"]`);
 		if (!section) return;
@@ -114,13 +112,11 @@ function applyControlSectionExpansionState(container, state) {
  * @private
  */
 function ensureSidebarInteractionTracking(container) {
-	if (!container || typeof container.addEventListener !== 'function') return;
 	if (trackedSidebarContainers.has(container)) return;
 
 	const captureInteractionAnchor = (event) => {
 		const target = event?.target;
 		if (!(target instanceof HTMLElement)) return;
-		if (typeof container.contains === 'function' && !container.contains(target)) return;
 		lastSidebarInteractionAnchor = {
 			targetId: target.id || null,
 			targetTop: target.getBoundingClientRect().top,
@@ -143,7 +139,7 @@ function ensureSidebarInteractionTracking(container) {
  * @private
  */
 function getSidebarScrollAnchor(container) {
-	const previousScrollTop = Number(container?.scrollTop || 0);
+	const previousScrollTop = container.scrollTop;
 	const hasRecentInteraction = lastSidebarInteractionAnchor
 		&& (Date.now() - lastSidebarInteractionAnchor.timestamp) <= SIDEBAR_INTERACTION_MAX_AGE_MS;
 
@@ -156,10 +152,7 @@ function getSidebarScrollAnchor(container) {
 	}
 
 	const activeElement = document.activeElement;
-	const canCheckContainment = typeof container?.contains === 'function';
-	const isAnchoredElement = canCheckContainment
-		&& activeElement instanceof HTMLElement
-		&& container.contains(activeElement);
+	const isAnchoredElement = activeElement instanceof HTMLElement && container.contains(activeElement);
 
 	if (!isAnchoredElement) {
 		return { previousScrollTop };
@@ -183,30 +176,21 @@ function getSidebarScrollAnchor(container) {
  * @private
  */
 function restoreSidebarScrollPosition(container, anchor) {
-	if (!anchor) return;
-	const canCheckContainment = typeof container?.contains === 'function';
-	const readCurrentScrollTop = () => Number(container?.scrollTop || 0);
-
 	if (anchor.activeElementId && Number.isFinite(anchor.activeElementTop)) {
 		const nextActiveElement = document.getElementById(anchor.activeElementId);
-		const elementIsInsideContainer = canCheckContainment
-			&& nextActiveElement instanceof HTMLElement
-			&& container.contains(nextActiveElement);
-		if (elementIsInsideContainer) {
+		if (nextActiveElement instanceof HTMLElement && container.contains(nextActiveElement)) {
 			const delta = nextActiveElement.getBoundingClientRect().top - anchor.activeElementTop;
-			container.scrollTop = readCurrentScrollTop() + delta;
-			if (typeof nextActiveElement.focus === 'function') {
-				try {
-					nextActiveElement.focus({ preventScroll: true });
-				} catch {
-					nextActiveElement.focus();
-				}
+			container.scrollTop += delta;
+			try {
+				nextActiveElement.focus({ preventScroll: true });
+			} catch {
+				nextActiveElement.focus();
 			}
 			return;
 		}
 	}
 
-	container.scrollTop = Number(anchor.previousScrollTop || 0);
+	container.scrollTop = anchor.previousScrollTop;
 }
 
 /**

@@ -53,13 +53,6 @@ export function createSingleCategoryGlobalFilter(column, token) {
 }
 
 /** @private */
-function isLegacySingleFilter(raw) {
-	if (!raw || typeof raw !== 'object') return false;
-	if (Array.isArray(raw.rules)) return false;
-	return 'column' in raw || 'include' in raw || 'operator' in raw || 'mode' in raw;
-}
-
-/** @private */
 function ruleHasColumn(rule) {
 	if (!rule || typeof rule !== 'object') return false;
 	if (typeof rule.column !== 'string') return false;
@@ -70,12 +63,13 @@ function ruleHasColumn(rule) {
  * Coerce any input into the canonical {@link GlobalFilter} shape. Handles
  * three input shapes:
  *   1. The canonical `{ rules, combine }` (current).
- *   2. A legacy single-rule filter (no `rules` array, but has `column` /
- *      `include` / `operator` / `mode`), promoted to a single-rule array.
+ *   2. An object without a `rules` array, read as a legacy single-rule
+ *      filter and promoted to a one-rule array when it names a column.
  *   3. Anything else, collapses to an empty filter.
  *
  * Rules without a column are filtered out; remaining rules are individually
- * normalized via {@link normalizeFilterRule}.
+ * normalized via {@link normalizeFilterRule}. Without `numericColumns`, every
+ * rule comes back categorical with `include` and `exclude` arrays.
  *
  * @param {*} rawFilter
  * @param {string[]} [numericColumns=[]] - Columns to treat as numeric when normalizing rule modes.
@@ -86,16 +80,8 @@ export function normalizeGlobalFilter(rawFilter, numericColumns = []) {
 		return createEmptyGlobalFilter();
 	}
 
-	if (isLegacySingleFilter(rawFilter)) {
-		const base = createEmptyGlobalFilter();
-		if (!ruleHasColumn(rawFilter)) {
-			return base;
-		}
-		base.rules.push(normalizeFilterRule(rawFilter, numericColumns));
-		return base;
-	}
-
-	const rules = Array.isArray(rawFilter.rules) ? rawFilter.rules : [];
+	// A legacy single-rule filter (pre-2.0) is itself the rule.
+	const rules = Array.isArray(rawFilter.rules) ? rawFilter.rules : [rawFilter];
 	const normalized = rules
 		.filter(rule => ruleHasColumn(rule))
 		.map(rule => normalizeFilterRule(rule, numericColumns));
@@ -178,9 +164,13 @@ export function applyGlobalFilterRules(rows, rawFilter, numericColumns = []) {
 	}, rows);
 }
 
+// The token helpers below normalize without numeric columns, so every rule
+// they read is categorical with `include` and `exclude` arrays. Numeric
+// columns never reach them; see `canFilterColumn` in globalFilterActions.js.
+
 /**
  * Add a categorical `token` to the include set for `column`. Creates a new
- * rule when no categorical rule exists for that column; otherwise updates
+ * rule when no rule exists for that column; otherwise updates
  * the existing rule. Also removes the same token from the exclude set,
  * since include + exclude on the same token would be contradictory.
  *
@@ -196,9 +186,7 @@ export function mergeIncludeTokenIntoFilter(rawFilter, column, token) {
 	if (typeof column !== 'string' || column.trim().length === 0) return normalized;
 	if (typeof token !== 'string' || token.length === 0) return normalized;
 
-	const idx = normalized.rules.findIndex(
-		rule => rule.column === column && rule.mode === 'categorical',
-	);
+	const idx = normalized.rules.findIndex(rule => rule.column === column);
 
 	if (idx === -1) {
 		normalized.rules.push({ column, mode: 'categorical', include: [token], exclude: [] });
@@ -206,8 +194,7 @@ export function mergeIncludeTokenIntoFilter(rawFilter, column, token) {
 	}
 
 	const rule = normalized.rules[idx];
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	const nextExclude = exclude.filter(item => item !== token);
 	if (include.includes(token)) {
 		if (nextExclude.length === exclude.length) return normalized;
@@ -233,9 +220,7 @@ export function excludeTokenFromFilter(rawFilter, column, token) {
 	if (typeof column !== 'string' || column.trim().length === 0) return normalized;
 	if (typeof token !== 'string' || token.length === 0) return normalized;
 
-	const idx = normalized.rules.findIndex(
-		rule => rule.column === column && rule.mode === 'categorical',
-	);
+	const idx = normalized.rules.findIndex(rule => rule.column === column);
 
 	if (idx === -1) {
 		normalized.rules.push({ column, mode: 'categorical', include: [], exclude: [token] });
@@ -243,8 +228,7 @@ export function excludeTokenFromFilter(rawFilter, column, token) {
 	}
 
 	const rule = normalized.rules[idx];
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	const nextInclude = include.filter(item => item !== token);
 	if (exclude.includes(token)) {
 		if (nextInclude.length === include.length) return normalized;
@@ -272,14 +256,11 @@ export function removeIncludeTokenFromFilter(rawFilter, column, token) {
 	if (typeof column !== 'string' || column.trim().length === 0) return normalized;
 	if (typeof token !== 'string' || token.length === 0) return normalized;
 
-	const idx = normalized.rules.findIndex(
-		rule => rule.column === column && rule.mode === 'categorical',
-	);
+	const idx = normalized.rules.findIndex(rule => rule.column === column);
 	if (idx === -1) return normalized;
 
 	const rule = normalized.rules[idx];
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	const nextInclude = include.filter(item => item !== token);
 
 	if (nextInclude.length === include.length) return normalized;
@@ -308,14 +289,11 @@ export function removeExcludeTokenFromFilter(rawFilter, column, token) {
 	if (typeof column !== 'string' || column.trim().length === 0) return normalized;
 	if (typeof token !== 'string' || token.length === 0) return normalized;
 
-	const idx = normalized.rules.findIndex(
-		rule => rule.column === column && rule.mode === 'categorical',
-	);
+	const idx = normalized.rules.findIndex(rule => rule.column === column);
 	if (idx === -1) return normalized;
 
 	const rule = normalized.rules[idx];
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	const nextExclude = exclude.filter(item => item !== token);
 
 	if (nextExclude.length === exclude.length) return normalized;
@@ -349,10 +327,8 @@ export function isShowOnlyThisRedundant(rawFilter, column, token) {
 
 	const rule = rules[0];
 	if (rule.column !== column) return false;
-	if (rule.mode !== 'categorical') return false;
 
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	if (include.length > 1) return false;
 	if (include.length === 1 && include[0] !== token) return false;
 	if (exclude.length > 1) return false;
@@ -374,28 +350,13 @@ export function getTokenFilterState(rawFilter, column, token) {
 	if (typeof token !== 'string' || token.length === 0) return null;
 
 	const normalized = normalizeGlobalFilter(rawFilter);
-	const rule = normalized.rules.find(
-		r => r.column === column && r.mode === 'categorical',
-	);
+	const rule = normalized.rules.find(r => r.column === column);
 	if (!rule) return null;
 
-	const include = Array.isArray(rule.include) ? rule.include : [];
-	const exclude = Array.isArray(rule.exclude) ? rule.exclude : [];
+	const { include, exclude } = rule;
 	if (exclude.includes(token)) return 'excluded';
 	if (include.includes(token)) return 'included';
 	return null;
-}
-
-/**
- * Compatibility alias for {@link createEmptyGlobalFilter}. Both functions
- * return the same shape, distinct names exist because "create empty"
- * reads better at construction sites while "create default" reads better
- * at reset sites.
- *
- * @returns {GlobalFilter}
- */
-export function createDefaultGlobalFilter() {
-	return createEmptyGlobalFilter();
 }
 
 /**

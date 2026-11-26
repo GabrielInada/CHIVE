@@ -167,6 +167,20 @@ describe('workerBackend, watchdog + fallback', () => {
 		expect(fallback.exportBytes.mock.calls[0][1]).toEqual({ omitDataPayloads: true });
 	});
 
+	it('loads the shared blobBackend as the fallback when none is injected', async () => {
+		// Production passes no fallbackBackendFactory, so this exercises the real
+		// dynamic import and the module's exported singleton name.
+		const { blobBackend } = await import('../../../../src/services/persistence/backends/blobBackend.js');
+		const hydrateSpy = vi.spyOn(blobBackend, 'hydrate');
+		const backend = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.hydrate()).resolves.toBeNull();
+		expect(hydrateSpy).toHaveBeenCalledTimes(1);
+	});
+
 	it('rejects fallback import errors using worker-style error normalization', async () => {
 		const fallback = {
 			hydrate: vi.fn(),

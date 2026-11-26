@@ -147,7 +147,7 @@ export function createPersistHandler(backend, post) {
 	 * @param {PersistWorkerRequest} msg
 	 */
 	async function handleOne(msg) {
-		const { id, op } = msg || {};
+		const { id, op } = msg;
 		try {
 			if (op === 'persist') {
 				const recon = reconstructPersist(msg.snapshot);

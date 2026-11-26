@@ -124,6 +124,30 @@ describe('togglePinnedFilterTooltip', () => {
 		expect(getTokenFilterState).not.toHaveBeenCalled();
 	});
 
+	it('offers no actions and no badge for a category whose column cannot be filtered', () => {
+		const getTokenFilterState = vi.fn(() => 'excluded');
+		const canFilterColumn = vi.fn(() => false);
+		const tooltip = pin({ ...recordingHandlers([]), getTokenFilterState, canFilterColumn }, [NORTH]);
+
+		expect(canFilterColumn).toHaveBeenCalledWith('region');
+		expect(tooltip.textContent).toContain('Rows: 4');
+		expect(actionButtons()).toHaveLength(0);
+		expect(stateBadge()).toBeNull();
+		expect(getTokenFilterState).not.toHaveBeenCalled();
+	});
+
+	it('keeps the actions of a filterable category beside one that cannot be filtered', () => {
+		pin({ ...recordingHandlers([]), getTokenFilterState: () => 'included', canFilterColumn: column => column === 'source' }, [
+			{ column: 'source', token: 'v:A', heading: 'Source' },
+			{ column: 'weight', token: 'v:3', heading: 'Weight' },
+		], { filterActionLabels: LABELS });
+
+		expect([...document.querySelectorAll('.chart-tooltip__action-set-label')].map(heading => heading.textContent))
+			.toEqual(['Source']);
+		expect(actionLabels()).toEqual(['Only', 'Unkeep']);
+		expect(stateBadge()).toBeNull();
+	});
+
 	it('pins the content alone without filter callbacks', () => {
 		const tooltip = pin(undefined, [NORTH]);
 

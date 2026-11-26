@@ -35,7 +35,7 @@ CHIVE adopts features that are [Baseline Widely available](docs/development/brow
 4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
 5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the directory structure.
 6. Run the focused checks while iterating: `npm run lint`, `npm run lint:css`, and `npm test`. Fix errors; general hygiene warnings should be reviewed, but they do not fail CI.
-7. Before opening the PR, run `npm run check`. It executes the complete local CI contract in one command: JavaScript lint, CSS lint, tests, and the production build.
+7. Before opening the PR, run `npm run check`. It executes the complete local CI contract in one command: JavaScript lint, CSS lint, tests with coverage thresholds, and the production build.
 8. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
 9. If your change touches imports, workers, assets, deployment, or runtime dependency loading, run a production-style static smoke test from the project root: `python -m http.server 8080`, then open <http://localhost:8080/>. This catches the raw-static deployment issues described in [ESLint guards](docs/development/contributor-reference.md#eslint-guards).
 10. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
@@ -46,15 +46,16 @@ Common commands:
 npm run dev          # Start Vite dev server (http://localhost:5173)
 npm run build        # Optional Vite production build -> dist/
 npm run preview      # Preview the optional Vite build
-npm run check        # Full local CI contract: lint, CSS lint, tests, build
+npm run check        # Full local CI contract: lint, CSS lint, tests with coverage, build
 npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usually need manual fixes
 npm run lint:css     # Run Stylelint CSS correctness checks
 npm run lint:css:fix # Apply safe Stylelint fixes
 npm run verify:vendor # Check vendored runtime files against package-lock
 npm test             # Run all tests once (vitest run)
-npm run test:coverage # Run tests and generate a coverage report
+npm run test:coverage # Run tests, write a coverage report, and enforce the floors in vitest.config.js
 npm run test:watch   # Tests in watch mode
+npm run smoke        # Boot the raw-static app in headless Chrome (needs Chrome)
 ```
 
 Before opening a PR, check that:
@@ -66,7 +67,7 @@ Before opening a PR, check that:
 - `npm test` passes.
 - `npm run check` passes the full CI contract in one command.
 - The affected feature was smoke-checked with `npm run dev`.
-- The local static smoke test was run if the change affects raw-static runtime behavior.
+- `npm run smoke` passes if the change affects raw-static runtime behavior.
 
 ## Branching workflow
 
