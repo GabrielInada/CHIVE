@@ -259,6 +259,56 @@ describe('workerBackend, reset is idempotent + stale responses ignored', () => {
 		expect(warnSpy).not.toHaveBeenCalled();             // stale onerror returns at the generation guard, before the warn
 	});
 
+	describe('a watchdog that fires after its timer was cleared', () => {
+		// clearTimeout runs on every settle and reset, so a real timer never
+		// fires late. Capture the callbacks and ignore clears to fire one anyway.
+		let watchdogs;
+		beforeEach(() => {
+			watchdogs = [];
+			vi.spyOn(globalThis, 'setTimeout').mockImplementation(callback => watchdogs.push(callback));
+			vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => {});
+		});
+
+		const stubFallback = () => ({ persist: vi.fn(async () => {}) });
+		const acking = worker => {
+			worker._deliver = data => queueMicrotask(() => worker.emit({ id: data.id, ok: true, result: null }));
+			return worker;
+		};
+
+		it('does nothing once its op has settled', async () => {
+			const worker = acking(new MockWorker());
+			const backend = createWorkerBackend({ workerFactory: () => worker, fallbackBackendFactory: stubFallback });
+
+			await backend.persist(snap());
+			watchdogs[0]();
+
+			expect(backend.getDiagnostics()).toMatchObject({ mode: 'worker', fallbackCount: 0 });
+			expect(worker.terminated).toBe(false);
+		});
+
+		it('does nothing to the replacement worker after a reset', async () => {
+			const fallback = stubFallback();
+			const workers = [];
+			const backend = createWorkerBackend({
+				// The first worker answers, so a reset keeps worker mode; the second stays silent.
+				workerFactory: () => { const w = new MockWorker(); if (!workers.length) acking(w); workers.push(w); return w; },
+				fallbackBackendFactory: () => fallback,
+			});
+
+			await backend.persist(snap());
+			workers[0].emitError({ message: 'crashed' });   // reset with nothing pending
+			const second = backend.persist(snap());           // waits for the drain, then goes to workers[1]
+			await vi.waitFor(() => expect(workers[1]?.posted).toHaveLength(1));
+			watchdogs[0]();                                   // the first op's watchdog, from the dead generation
+
+			expect(backend.getDiagnostics()).toMatchObject({ mode: 'worker', fallbackCount: 1, pendingOperations: 1 });
+			expect(workers[1].terminated).toBe(false);
+			workers[1].emit({ id: workers[1].posted[0].id, ok: true, result: null });
+			await expect(second).resolves.toBeUndefined();
+			expect(fallback.persist).not.toHaveBeenCalled();
+		});
+	});
+
 	it('ignores a late ok:true from a terminated worker, even for an id pending on its replacement', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);

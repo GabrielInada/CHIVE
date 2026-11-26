@@ -15,6 +15,7 @@ import {
 	makeSnapshot,
 	writeLegacyState,
 } from './persistence.testSupport.js';
+import { clearErrorLog, getErrorLog } from '../../src/services/diagnostics.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
 import { calculateCategoricalStatistics } from '../../src/domain/datasets/statistics.js';
 import { mergePanelSnapshotConfigsWithDefaults } from '../../src/domain/panel/rehydration.js';
@@ -57,6 +58,18 @@ describe('persistence', () => {
 		await hydrateState({ applyStateSnapshot: secondReplace });
 		expect(secondReplace).toHaveBeenCalledTimes(1);
 		expect(secondReplace.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
+	});
+
+	it('marks a first boot without legacy data as migrated and leaves no legacy database', async () => {
+		clearErrorLog();
+		const applyStateSnapshot = vi.fn();
+
+		await hydrateState({ applyStateSnapshot });
+
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
+		expect(localStorage.getItem('chive.migrated')).toBe('1');
+		expect(getErrorLog()).toEqual([]);
+		expect((await indexedDB.databases()).map(info => info.name)).not.toContain('chive-state');
 	});
 
 	it('drops stale stats coming in through the legacy import path', async () => {

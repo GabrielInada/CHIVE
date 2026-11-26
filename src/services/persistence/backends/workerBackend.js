@@ -232,11 +232,15 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	function buildPersistMessage(record, id, forceFull) {
 		const includedKeys = new Set();
 		const meta = record.meta;
+		// A dataset without an id or a chart without an integer id has no
+		// tracked payload, so its key and ref are both missing. Without the
+		// has() check, undefined === undefined would claim it as cached.
+		const isCached = (key, ref) => !forceFull && sentPayloads.has(key) && sentPayloads.get(key) === ref;
 
-		const datasets = (meta.data?.datasets || []).map(ds => {
+		const datasets = meta.data.datasets.map(ds => {
 			const key = datasetKey(ds.id);
 			const ref = record.refByKey.get(key);
-			if (!forceFull && sentPayloads.get(key) === ref) {
+			if (isCached(key, ref)) {
 				return { ...ds, rowsCached: true };
 			}
 			includedKeys.add(key);
@@ -245,20 +249,20 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 
 		let panel = meta.panel;
 		if (panel) {
-			const charts = (panel.charts || []).map(chart => {
+			const charts = panel.charts.map(chart => {
 				const cid = Number(chart.id);
 				const out = { ...chart };
 				const dKey = chartDataKey(cid);
 				const cKey = chartColsKey(cid);
 				const dRef = record.refByKey.get(dKey);
 				const cRef = record.refByKey.get(cKey);
-				if (!forceFull && sentPayloads.get(dKey) === dRef) {
+				if (isCached(dKey, dRef)) {
 					out.dataSnapshotCached = true;
 				} else {
 					includedKeys.add(dKey);
 					out.dataSnapshot = dRef || [];
 				}
-				if (!forceFull && sentPayloads.get(cKey) === cRef) {
+				if (isCached(cKey, cRef)) {
 					out.columnsSnapshotCached = true;
 				} else {
 					includedKeys.add(cKey);
@@ -272,10 +276,10 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				for (const [field, suffix] of [['dataSnapshot', 'data'], ['columnsSnapshot', 'cols']]) {
 					const payloadKey = `placement:${key}:${suffix}`;
 					const ref = record.refByKey.get(payloadKey);
-					if (!forceFull && sentPayloads.get(payloadKey) === ref) out[`${field}Cached`] = true;
+					if (isCached(payloadKey, ref)) out[`${field}Cached`] = true;
 					else {
 						includedKeys.add(payloadKey);
-						out[field] = ref || [];
+						out[field] = ref;
 					}
 				}
 				return out;
@@ -300,13 +304,13 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 */
 	function rebuildFull(record) {
 		const meta = record.meta;
-		const datasets = (meta.data?.datasets || []).map(ds => ({
+		const datasets = meta.data.datasets.map(ds => ({
 			...ds,
 			rows: record.refByKey.get(datasetKey(ds.id)) || [],
 		}));
 		let panel = meta.panel;
 		if (panel) {
-			const charts = (panel.charts || []).map(chart => {
+			const charts = panel.charts.map(chart => {
 				const cid = Number(chart.id);
 				return {
 					...chart,
@@ -316,8 +320,8 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			});
 			const blocks = mapPlacementPayloads(panel.blocks, (placement, blockId, slotId) => ({
 				...placement,
-				dataSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:data`) || [],
-				columnsSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:cols`) || [],
+				dataSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:data`),
+				columnsSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:cols`),
 			}));
 			panel = { ...panel, charts, ...(panel.blocks ? { blocks } : {}) };
 		}
@@ -364,10 +368,8 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	}
 
 	function clearEntry(entry) {
-		if (entry.timer) {
-			clearTimeout(entry.timer);
-			entry.timer = null;
-		}
+		clearTimeout(entry.timer);
+		entry.timer = null;
 		pending.delete(entry.id);
 	}
 
@@ -420,7 +422,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			return;
 		}
 		entry.retried = true;
-		if (entry.timer) clearTimeout(entry.timer);
+		clearTimeout(entry.timer);
 		const { message, includedKeys } = buildPersistMessage(entry.record, entry.id, true);
 		entry.includedKeys = includedKeys;             // full retry includes every present key
 		entry.timer = setTimeout(() => onWatchdog(entry.id, entry.workerGeneration), timeoutMs);
@@ -472,9 +474,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		// Snapshot pending FIRST (in insertion order) before clearing, else the
 		// records needed for fallback are lost.
 		const toDrain = [...pending.values()];
-		for (const entry of toDrain) {
-			if (entry.timer) clearTimeout(entry.timer);
-		}
+		for (const entry of toDrain) clearTimeout(entry.timer);
 		pending.clear();
 		currentGeneration += 1;
 		if (worker) {
@@ -527,7 +527,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			} else if (op === 'clear') {
 				entry.resolve((await fb.clear()) ?? null);
 			} else {
-				entry.resolve(undefined);
+				throw new Error(`unknown persistence op: ${op}`);
 			}
 		} catch (err) {
 			entry.reject(errorFromWorker(err));

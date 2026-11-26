@@ -102,12 +102,10 @@ describe('readLegacyState', () => {
 		await expect(readLegacyState()).resolves.toEqual(first);
 	});
 
-	it('creates an empty legacy database when none exists', async () => {
-		// The open has no version, so a missing database is created at version 1.
-		// The import marker keeps later boots from opening it again.
+	it('returns null without creating the legacy database when none exists', async () => {
 		await expect(readLegacyState()).resolves.toBeNull();
 
-		expect(await legacyDbNames()).toEqual([LEGACY_DB_NAME]);
+		expect(await legacyDbNames()).toEqual([]);
 	});
 
 	it('returns null without IndexedDB, including when reading the global throws', async () => {
