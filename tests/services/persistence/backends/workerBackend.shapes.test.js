@@ -105,6 +105,26 @@ describe('workerBackend, snapshot shapes on the wire', () => {
 		expect(saved.panel.charts[0]).toMatchObject({ id: 'not-a-number', dataSnapshot: [], columnsSnapshot: [] });
 	});
 
+	it('never marks the payloads of a dataset without an id or a chart without an integer id as cached', async () => {
+		const snapshot = snap();
+		delete snapshot.data.datasets[0].id;
+		snapshot.panel.charts[0].id = 'not-a-number';
+
+		const worker = new MockWorker();
+		attachRealHandler(worker, nextDb());
+		const backend = createWorkerBackend({ workerFactory: () => worker, fallbackBackendFactory: stubFallback });
+		await backend.persist(snapshot);
+		await backend.persist(snapshot);
+
+		// One message per save: a payload claimed as cached would cost a resync round trip.
+		expect(worker.posted).toHaveLength(2);
+		for (const { snapshot: sent } of worker.posted) {
+			expect(sent.data.datasets[0]).not.toHaveProperty('rowsCached');
+			expect(sent.panel.charts[0]).not.toHaveProperty('dataSnapshotCached');
+			expect(sent.panel.charts[0]).not.toHaveProperty('columnsSnapshotCached');
+		}
+	});
+
 	it('posts import bytes that are neither a typed array nor an ArrayBuffer as they are', async () => {
 		const worker = ackingWorker();
 		const backend = createWorkerBackend({ workerFactory: () => worker, fallbackBackendFactory: stubFallback });
