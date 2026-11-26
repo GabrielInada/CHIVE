@@ -232,11 +232,15 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	function buildPersistMessage(record, id, forceFull) {
 		const includedKeys = new Set();
 		const meta = record.meta;
+		// A dataset without an id or a chart without an integer id has no
+		// tracked payload, so its key and ref are both missing. Without the
+		// has() check, undefined === undefined would claim it as cached.
+		const isCached = (key, ref) => !forceFull && sentPayloads.has(key) && sentPayloads.get(key) === ref;
 
 		const datasets = meta.data.datasets.map(ds => {
 			const key = datasetKey(ds.id);
 			const ref = record.refByKey.get(key);
-			if (!forceFull && sentPayloads.get(key) === ref) {
+			if (isCached(key, ref)) {
 				return { ...ds, rowsCached: true };
 			}
 			includedKeys.add(key);
@@ -252,13 +256,13 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				const cKey = chartColsKey(cid);
 				const dRef = record.refByKey.get(dKey);
 				const cRef = record.refByKey.get(cKey);
-				if (!forceFull && sentPayloads.get(dKey) === dRef) {
+				if (isCached(dKey, dRef)) {
 					out.dataSnapshotCached = true;
 				} else {
 					includedKeys.add(dKey);
 					out.dataSnapshot = dRef || [];
 				}
-				if (!forceFull && sentPayloads.get(cKey) === cRef) {
+				if (isCached(cKey, cRef)) {
 					out.columnsSnapshotCached = true;
 				} else {
 					includedKeys.add(cKey);
@@ -272,7 +276,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				for (const [field, suffix] of [['dataSnapshot', 'data'], ['columnsSnapshot', 'cols']]) {
 					const payloadKey = `placement:${key}:${suffix}`;
 					const ref = record.refByKey.get(payloadKey);
-					if (!forceFull && sentPayloads.get(payloadKey) === ref) out[`${field}Cached`] = true;
+					if (isCached(payloadKey, ref)) out[`${field}Cached`] = true;
 					else {
 						includedKeys.add(payloadKey);
 						out[field] = ref;
